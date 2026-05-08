@@ -1,0 +1,9 @@
+export const ROLES = ["CONSTABLE", "INSPECTOR", "SP", "DGP", "ADMIN"];
+export const OFFICER_ROLES = ["CONSTABLE", "INSPECTOR", "SP", "DGP"];
+export const OFFICER_STATUSES = ["pending", "active", "rejected"];
+export const FIR_STATUSES = ["open", "investigating", "closed", "archived"];
+export const CASE_UPDATE_TYPES = ["NOTE", "STATUS_CHANGED", "EVIDENCE_ADDED"];
+export const FIR_LIFECYCLE_STATUSES = ["OPEN", "INVESTIGATING", "CLOSED"];
+export const COMPLAINT_STATUSES = ["PENDING", "UNDER_REVIEW", "CONVERTED_TO_FIR", "REJECTED"];
+export const PRIORITIES = ["LOW", "MEDIUM", "HIGH"];
+export const FIR_PRIORITIES = ["low", "medium", "high", "critical"];
