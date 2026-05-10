@@ -3,7 +3,11 @@ const os = require("os");
 const path = require("path");
 const multer = require("multer");
 
-const uploadBase = process.env.VERCEL ? os.tmpdir() : path.join(__dirname, "../../uploads");
+const isServerlessRuntime =
+  Boolean(process.env.VERCEL) ||
+  Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME) ||
+  process.cwd().startsWith("/var/task");
+const uploadBase = isServerlessRuntime ? os.tmpdir() : path.join(__dirname, "../../uploads");
 const uploadRoot = path.join(uploadBase, "evidence");
 fs.mkdirSync(uploadRoot, { recursive: true });
 
