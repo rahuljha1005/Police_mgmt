@@ -7,6 +7,19 @@ const attachmentSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    secureUrl: {
+      type: String,
+      trim: true,
+    },
+    publicId: {
+      type: String,
+      trim: true,
+    },
+    provider: {
+      type: String,
+      enum: ["cloudinary", "external"],
+      default: "cloudinary",
+    },
     fileType: {
       type: String,
       required: true,
@@ -23,6 +36,14 @@ const attachmentSchema = new mongoose.Schema(
     uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+    },
+    resourceType: {
+      type: String,
+      trim: true,
+    },
+    bytes: {
+      type: Number,
+      min: 0,
     },
   },
   { _id: false }

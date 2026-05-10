@@ -14,10 +14,16 @@ const attachmentSchema = Joi.object({
     "string.empty": "Attachment file URL is required",
     "any.required": "Attachment file URL is required",
   }),
+  secureUrl: Joi.string().trim().uri().optional(),
+  publicId: Joi.string().trim().max(300).optional(),
+  provider: Joi.string().valid("cloudinary", "external").default("cloudinary"),
   fileType: Joi.string().trim().min(2).max(80).required().messages({
     "string.empty": "Attachment file type is required",
     "any.required": "Attachment file type is required",
   }),
+  fileName: Joi.string().trim().max(255).optional(),
+  resourceType: Joi.string().trim().max(40).optional(),
+  bytes: Joi.number().integer().min(0).optional(),
   uploadedAt: Joi.date().iso().default(() => new Date()),
 });
 

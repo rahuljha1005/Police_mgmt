@@ -165,9 +165,14 @@ const uploadEvidence = async ({ caseUpdateId, files, actorId }) => {
   }
 
   const attachments = files.map((file) => ({
-    fileUrl: `/uploads/evidence/${file.filename}`,
+    fileUrl: file.path,
+    secureUrl: file.path,
+    publicId: file.filename,
+    provider: "cloudinary",
     fileType: file.mimetype,
     fileName: file.originalname,
+    resourceType: file.mimetype?.split("/")[0],
+    bytes: file.size,
     uploadedAt: new Date(),
     uploadedBy: actorId,
   }));

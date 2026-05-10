@@ -1,29 +1,23 @@
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
 const multer = require("multer");
-
-const isServerlessRuntime =
-  Boolean(process.env.VERCEL) ||
-  Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME) ||
-  process.cwd().startsWith("/var/task");
-const uploadBase = isServerlessRuntime ? os.tmpdir() : path.join(__dirname, "../../uploads");
-const uploadRoot = path.join(uploadBase, "evidence");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const { cloudinary, isCloudinaryConfigured } = require("../config/cloudinary");
 
 const allowedMimeTypes = new Set(["image/png", "image/jpeg", "application/pdf", "video/mp4"]);
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Directory creation is delayed until an upload request is actually made.
-    // This prevents Vercel cold starts and unrelated routes like login from
-    // crashing while importing middleware.
-    fs.mkdir(uploadRoot, { recursive: true }, (error) => {
-      cb(error, uploadRoot);
-    });
-  },
-  filename: (req, file, cb) => {
-    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}-${safeName}`);
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => {
+    if (!isCloudinaryConfigured()) {
+      throw new Error("Cloudinary environment variables are not configured");
+    }
+
+    return {
+      folder: "police-management/evidence",
+      resource_type: "auto",
+      public_id: `${Date.now()}-${Math.round(Math.random() * 1e9)}`,
+      use_filename: false,
+      unique_filename: true,
+    };
   },
 });
 

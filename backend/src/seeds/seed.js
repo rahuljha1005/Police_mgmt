@@ -94,7 +94,7 @@ const seedUsers = async ({ stations }) => {
       user_id: officer._id,
       badge_number: `MH-MUM-${String(index + 1).padStart(5, "0")}`,
       government_id: `GOV-MH-${String(700000 + index)}`,
-      document_url: `/uploads/officers/mh-mum-${String(index + 1).padStart(5, "0")}.pdf`,
+      document_url: `https://res.cloudinary.com/demo/raw/upload/officers/mh-mum-${String(index + 1).padStart(5, "0")}.pdf`,
       verification_status: "approved",
       verified_by: admin._id,
       verified_at: officer.verified_at,
@@ -241,7 +241,10 @@ const seedCaseUpdates = async ({ faker, firs }) => {
           updateType === "EVIDENCE_ADDED"
             ? [
                 {
-                  fileUrl: `/uploads/evidence/${fir.fir_number.toLowerCase()}-${index + 1}.jpg`,
+                  fileUrl: `https://res.cloudinary.com/demo/image/upload/evidence/${fir.fir_number.toLowerCase()}-${index + 1}.jpg`,
+                  secureUrl: `https://res.cloudinary.com/demo/image/upload/evidence/${fir.fir_number.toLowerCase()}-${index + 1}.jpg`,
+                  publicId: `evidence/${fir.fir_number.toLowerCase()}-${index + 1}`,
+                  provider: "external",
                   fileType: "image/jpeg",
                   uploadedAt: createdAt,
                 },

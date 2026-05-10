@@ -11,13 +11,28 @@ const complaintRoutes = require("./modules/complaint/complaint.routes");
 const firRoutes = require("./modules/fir/fir.routes");
 const heatmapRoutes = require("./modules/heatmap/heatmap.routes");
 const notificationRoutes = require("./modules/notification/notification.routes");
+const { isCloudinaryConfigured } = require("./config/cloudinary");
 
 const app = express();
+const allowedOrigins = (process.env.CORS_ORIGIN || process.env.FRONTEND_URL || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
-app.use(cors());
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
-app.use("/uploads", express.static("uploads"));
 
 app.get("/favicon.ico", (req, res) => {
   res.status(204).end();
@@ -34,6 +49,10 @@ app.get("/", (req, res) => {
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
+    message: "API running",
+    mongoUriExists: Boolean(process.env.MONGO_URI),
+    jwtExists: Boolean(process.env.JWT_SECRET),
+    cloudinaryConfigured: isCloudinaryConfigured(),
   });
 });
 
@@ -78,6 +97,12 @@ app.use((req, res) => {
 
 app.use((error, req, res, next) => {
   const statusCode = error.statusCode || 500;
+  console.error("Unhandled request error:", {
+    message: error.message,
+    stack: error.stack,
+    path: req.originalUrl,
+    method: req.method,
+  });
 
   if (error.code === 11000) {
     const duplicateField = Object.keys(error.keyPattern || {})[0] || "field";
@@ -98,6 +123,7 @@ app.use((error, req, res, next) => {
   return res.status(statusCode).json({
     success: false,
     message: statusCode === 500 ? "Internal server error" : error.message,
+    error: process.env.NODE_ENV === "production" ? undefined : error.message,
   });
 });
 
