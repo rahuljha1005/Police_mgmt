@@ -9,13 +9,17 @@ const isServerlessRuntime =
   process.cwd().startsWith("/var/task");
 const uploadBase = isServerlessRuntime ? os.tmpdir() : path.join(__dirname, "../../uploads");
 const uploadRoot = path.join(uploadBase, "evidence");
-fs.mkdirSync(uploadRoot, { recursive: true });
 
 const allowedMimeTypes = new Set(["image/png", "image/jpeg", "application/pdf", "video/mp4"]);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadRoot);
+    // Directory creation is delayed until an upload request is actually made.
+    // This prevents Vercel cold starts and unrelated routes like login from
+    // crashing while importing middleware.
+    fs.mkdir(uploadRoot, { recursive: true }, (error) => {
+      cb(error, uploadRoot);
+    });
   },
   filename: (req, file, cb) => {
     const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
