@@ -61,6 +61,7 @@ const seedUsers = async ({ stations }) => {
   const admin = await User.create({
     name: "Mumbai Police Admin",
     email: "admin@police.com",
+    phone: "9999990000",
     password,
     role: "ADMIN",
     status: "active",
@@ -76,6 +77,7 @@ const seedUsers = async ({ stations }) => {
       name,
       email: `${name.toLowerCase().replace(/\s+/g, ".")}.${index + 1}@mumbaipolice.gov.in`,
       phone: officerPhone(),
+      badgeNumber: `MH-MUM-${String(index + 1).padStart(5, "0")}`,
       password,
       role: pickOne(roles),
       police_station_id: station._id,

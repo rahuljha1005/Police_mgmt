@@ -6,11 +6,13 @@ const databaseMiddleware = require("./middleware/db.middleware");
 const adminRoutes = require("./modules/admin/admin.routes");
 const analyticsRoutes = require("./modules/analytics/analytics.routes");
 const authRoutes = require("./modules/auth/auth.routes");
+const civilianAuthRoutes = require("./modules/auth/civilianAuth.routes");
 const caseUpdateRoutes = require("./modules/caseUpdate/caseUpdate.routes");
 const complaintRoutes = require("./modules/complaint/complaint.routes");
 const firRoutes = require("./modules/fir/fir.routes");
 const heatmapRoutes = require("./modules/heatmap/heatmap.routes");
 const notificationRoutes = require("./modules/notification/notification.routes");
+const publicAnalyticsRoutes = require("./modules/publicAnalytics/publicAnalytics.routes");
 const { isCloudinaryConfigured } = require("./config/cloudinary");
 
 const app = express();
@@ -80,6 +82,7 @@ app.get("/api/db-health", async (req, res) => {
 app.use("/api", databaseMiddleware);
 
 app.use("/api/auth", authRoutes);
+app.use("/api/civilian-auth", civilianAuthRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/firs", firRoutes);
@@ -87,6 +90,7 @@ app.use("/api/case-updates", caseUpdateRoutes);
 app.use("/api/complaints", complaintRoutes);
 app.use("/api/heatmap", heatmapRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/public-analytics", publicAnalyticsRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

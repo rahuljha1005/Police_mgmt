@@ -20,15 +20,20 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      required() {
-        return this.role !== "ADMIN";
-      },
+      required: true,
       unique: true,
       sparse: true,
+      trim: true,
+    },
+    badgeNumber: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
     },
     role: {
       type: String,
-      enum: ["CONSTABLE", "INSPECTOR", "SP", "DGP", "ADMIN"],
+      enum: ["ADMIN", "SP", "INSPECTOR", "CONSTABLE"],
       required: true,
       index: true,
     },
@@ -40,11 +45,20 @@ const userSchema = new mongoose.Schema(
       },
       index: true,
     },
+    zone_id: {
+      type: String,
+      trim: true,
+      index: true,
+    },
     status: {
       type: String,
-      enum: ["pending", "active", "rejected"],
-      default: "pending",
+      enum: ["PENDING", "ACTIVE", "SUSPENDED", "pending", "active", "rejected"],
+      default: "PENDING",
       index: true,
+    },
+    profileImage: {
+      type: String,
+      trim: true,
     },
     verified_by: {
       type: mongoose.Schema.Types.ObjectId,

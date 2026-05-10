@@ -5,8 +5,12 @@ const auditLogSchema = new mongoose.Schema(
     user_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
       index: true,
+    },
+    actor_model: {
+      type: String,
+      enum: ["User", "Civilian", "System"],
+      default: "User",
     },
     action: {
       type: String,
@@ -20,7 +24,6 @@ const auditLogSchema = new mongoose.Schema(
     },
     entity_id: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
       index: true,
     },
     old_values: {

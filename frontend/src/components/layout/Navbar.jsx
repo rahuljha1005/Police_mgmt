@@ -17,7 +17,7 @@ const Navbar = () => {
           <NotificationBell />
           <div className="text-right">
             <p className="text-sm font-medium text-white">{user?.name || "Admin"}</p>
-            <p className="text-xs text-zinc-400">{user?.role || "ADMIN"}</p>
+            <p className="text-xs text-zinc-400">{user?.type === "CIVILIAN" ? "CIVILIAN" : user?.role || "ADMIN"}</p>
           </div>
           <Button onClick={logout} variant="outline">Logout</Button>
         </div>

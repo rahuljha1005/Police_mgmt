@@ -126,6 +126,33 @@ const createComplaint = async (complaintData, actorId) => {
   return populateComplaint(Complaint.findById(complaint._id));
 };
 
+const createCivilianComplaint = async (complaintData, civilianId) => {
+  await assertPoliceStation(complaintData.police_station_id);
+
+  const civilian = await Civilian.findById(civilianId);
+  if (!civilian) throw new NotFoundError("Civilian account not found");
+
+  const complaint = await Complaint.create({
+    civilian_id: civilian._id,
+    title: complaintData.title,
+    description: complaintData.description,
+    police_station_id: complaintData.police_station_id,
+    status: "PENDING",
+    priority: complaintData.priority,
+    complaint_location: complaintData.complaint_location,
+  });
+
+  await writeAuditLog({
+    userId: civilian._id,
+    action: "CREATE_COMPLAINT",
+    entityType: "COMPLAINT",
+    entityId: complaint._id,
+    newValues: { source: "CIVILIAN_PORTAL", complaint_id: complaint._id },
+  });
+
+  return populateComplaint(Complaint.findById(complaint._id));
+};
+
 const getComplaints = async ({ status, police_station_id, assigned_officer_id, priority, page, limit }) => {
   const filter = {};
   if (status) filter.status = status;
@@ -155,6 +182,36 @@ const getComplaints = async ({ status, police_station_id, assigned_officer_id, p
 
 const getComplaintById = async (complaintId) => {
   const complaint = await populateComplaint(Complaint.findById(complaintId));
+  if (!complaint) throw new NotFoundError("Complaint not found");
+  return complaint;
+};
+
+const getCivilianComplaints = async ({ civilianId, status, page, limit }) => {
+  const filter = { civilian_id: civilianId };
+  if (status) filter.status = status;
+
+  const skip = (page - 1) * limit;
+  const [complaints, total] = await Promise.all([
+    populateComplaint(Complaint.find(filter))
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Complaint.countDocuments(filter),
+  ]);
+
+  return {
+    complaints,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
+const getCivilianComplaintById = async (complaintId, civilianId) => {
+  const complaint = await populateComplaint(Complaint.findOne({ _id: complaintId, civilian_id: civilianId }));
   if (!complaint) throw new NotFoundError("Complaint not found");
   return complaint;
 };
@@ -317,6 +374,9 @@ module.exports = {
   assignOfficer,
   convertComplaintToFir,
   createComplaint,
+  createCivilianComplaint,
+  getCivilianComplaintById,
+  getCivilianComplaints,
   getComplaintById,
   getComplaints,
   updateComplaintStatus,

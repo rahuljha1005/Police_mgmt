@@ -15,9 +15,10 @@ export const useAuth = () => {
   const user = useMemo(() => readUser(), []);
 
   const logout = () => {
+    const isCivilian = user?.type === "CIVILIAN" || window.location.pathname.startsWith("/civilian");
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    navigate("/");
+    navigate(isCivilian ? "/civilian/login" : "/login");
   };
 
   return {

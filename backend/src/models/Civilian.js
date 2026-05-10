@@ -16,12 +16,28 @@ const civilianSchema = new mongoose.Schema(
     },
     email: {
       type: String,
+      unique: true,
+      sparse: true,
       trim: true,
       lowercase: true,
+    },
+    password: {
+      type: String,
+      select: false,
     },
     address: {
       type: String,
       trim: true,
+    },
+    profileImage: {
+      type: String,
+      trim: true,
+    },
+    status: {
+      type: String,
+      enum: ["ACTIVE", "BLOCKED"],
+      default: "ACTIVE",
+      index: true,
     },
   },
   {

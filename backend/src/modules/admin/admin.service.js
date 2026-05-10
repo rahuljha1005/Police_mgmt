@@ -26,7 +26,7 @@ class BadRequestError extends Error {
   }
 }
 
-const officerRoles = ["CONSTABLE", "INSPECTOR", "SP", "DGP"];
+const officerRoles = ["CONSTABLE", "INSPECTOR", "SP"];
 const accountRoles = [...officerRoles, "ADMIN"];
 const generateTemporaryPassword = () => crypto.randomBytes(12).toString("base64url");
 
@@ -70,7 +70,7 @@ const createOfficer = async (officerData, adminId) => {
     role,
     police_station_id,
     password: hashedPassword,
-    status: "pending",
+    status: "PENDING",
   });
 
   await writeAuditLog({
@@ -84,7 +84,7 @@ const createOfficer = async (officerData, adminId) => {
       phone,
       role,
       police_station_id,
-      status: "pending",
+      status: "PENDING",
     },
   });
 
@@ -109,7 +109,7 @@ const verifyOfficer = async (officerId, verificationStatus, adminId) => {
     verified_by: officer.verified_by,
     verified_at: officer.verified_at,
   };
-  const nextStatus = verificationStatus === "approved" ? "active" : "rejected";
+  const nextStatus = verificationStatus === "approved" ? "ACTIVE" : "SUSPENDED";
 
   officer.status = nextStatus;
   if (verificationStatus === "approved") {
@@ -270,7 +270,7 @@ const getReferenceData = async () => {
   const [policeStations, crimeTypes, officers] = await Promise.all([
     PoliceStation.find().select("name address state zone").sort({ name: 1 }),
     CrimeType.find().select("name severity").sort({ name: 1 }),
-    User.find({ role: { $in: officerRoles }, status: "active" })
+    User.find({ role: { $in: officerRoles }, status: { $in: ["ACTIVE", "active"] } })
       .select("name email role police_station_id")
       .sort({ name: 1 }),
   ]);

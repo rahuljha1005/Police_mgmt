@@ -37,6 +37,23 @@ const createComplaint = async (req, res, next) => {
   }
 };
 
+const createCivilianComplaint = async (req, res, next) => {
+  try {
+    const { error, value } = validate(createComplaintSchema.fork(["civilian"], (schema) => schema.optional()), req.body);
+    if (error) return validationErrorResponse(res, error);
+
+    const complaint = await complaintService.createCivilianComplaint(value, req.user._id);
+
+    return res.status(201).json({
+      success: true,
+      message: "Complaint submitted successfully",
+      data: complaint,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 const getComplaints = async (req, res, next) => {
   try {
     const { error, value } = validate(getComplaintsQuerySchema, req.query);
@@ -61,6 +78,46 @@ const getComplaintById = async (req, res, next) => {
     if (params.error) return validationErrorResponse(res, params.error);
 
     const complaint = await complaintService.getComplaintById(params.value.id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Complaint fetched successfully",
+      data: complaint,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const getMyComplaints = async (req, res, next) => {
+  try {
+    const { error, value } = validate(getComplaintsQuerySchema, req.query);
+    if (error) return validationErrorResponse(res, error);
+
+    const result = await complaintService.getCivilianComplaints({
+      civilianId: req.user._id,
+      status: value.status,
+      page: value.page,
+      limit: value.limit,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Your complaints fetched successfully",
+      data: result.complaints,
+      pagination: result.pagination,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const getMyComplaintById = async (req, res, next) => {
+  try {
+    const params = validate(objectIdParamSchema, req.params);
+    if (params.error) return validationErrorResponse(res, params.error);
+
+    const complaint = await complaintService.getCivilianComplaintById(params.value.id, req.user._id);
 
     return res.status(200).json({
       success: true,
@@ -139,8 +196,11 @@ const convertComplaintToFir = async (req, res, next) => {
 module.exports = {
   assignOfficer,
   convertComplaintToFir,
+  createCivilianComplaint,
   createComplaint,
   getComplaintById,
   getComplaints,
+  getMyComplaintById,
+  getMyComplaints,
   updateComplaintStatus,
 };

@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
-import { login } from "../../services/auth.api";
+import { civilianLogin } from "../../services/civilianAuth.api";
 
-const Login = () => {
+const CivilianLogin = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: "admin@police.com", password: "Password@123" });
+  const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,11 +17,12 @@ const Login = () => {
     event.preventDefault();
     setError("");
     setLoading(true);
+
     try {
-      const response = await login(form);
+      const response = await civilianLogin(form);
       localStorage.setItem("token", response.data.token);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
-      navigate("/dashboard");
+      localStorage.setItem("user", JSON.stringify(response.data.civilian));
+      navigate("/civilian/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Unable to login.");
     } finally {
@@ -30,32 +31,33 @@ const Login = () => {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#15110f] px-4 py-8 text-white">
-      <section className="w-full max-w-md rounded-lg border border-white/10 bg-police-panel p-6 shadow-2xl shadow-black/40">
-        <p className="text-sm font-semibold uppercase text-police-accent">Police Management System</p>
-        <h1 className="mt-2 text-3xl font-semibold">Police Login</h1>
+    <main className="flex min-h-screen items-center justify-center bg-[#17120f] px-4 py-8 text-white">
+      <section className="w-full max-w-md rounded-lg border border-white/10 bg-[#241b17] p-6 shadow-2xl shadow-black/40">
+        <p className="text-sm font-semibold uppercase text-amber-300">Citizen Services</p>
+        <h1 className="mt-2 text-3xl font-semibold">Civilian Login</h1>
         <form className="mt-7 space-y-4" onSubmit={submit}>
           <Input label="Email" name="email" onChange={updateForm} type="email" value={form.email} />
           <div className="relative">
             <Input label="Password" name="password" onChange={updateForm} type={showPassword ? "text" : "password"} value={form.password} />
-            <button className="absolute bottom-2 right-2 rounded px-2 py-1 text-xs text-police-accent" onClick={() => setShowPassword((value) => !value)} type="button">
+            <button className="absolute bottom-2 right-2 rounded px-2 py-1 text-xs text-amber-300" onClick={() => setShowPassword((value) => !value)} type="button">
               {showPassword ? "Hide" : "Show"}
             </button>
           </div>
           <label className="flex items-center gap-2 text-sm text-zinc-400">
-            <input className="h-4 w-4 accent-police-accent" type="checkbox" /> Remember me
+            <input className="h-4 w-4 accent-amber-300" type="checkbox" /> Remember me
           </label>
           {error && <div className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</div>}
           <Button className="w-full py-3" disabled={loading} type="submit">
             {loading ? "Signing in..." : "Login"}
           </Button>
-          <button className="w-full text-sm text-police-accent hover:text-white" onClick={() => navigate("/civilian/login")} type="button">
-            Continue as civilian
-          </button>
+          <div className="flex justify-between text-sm">
+            <Link className="text-amber-300 hover:text-white" to="/civilian/signup">Create civilian account</Link>
+            <Link className="text-zinc-400 hover:text-white" to="/login">Police login</Link>
+          </div>
         </form>
       </section>
     </main>
   );
 };
 
-export default Login;
+export default CivilianLogin;
