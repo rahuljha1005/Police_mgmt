@@ -7,6 +7,10 @@ dotenv.config();
 let dbConnection;
 
 module.exports = async (req, res) => {
+  if (req.url === "/" || req.url.startsWith("/api/health")) {
+    return app(req, res);
+  }
+
   try {
     dbConnection = dbConnection || connectDB();
     await dbConnection;
