@@ -1,8 +1,10 @@
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const multer = require("multer");
 
-const uploadRoot = path.join(__dirname, "../../uploads/evidence");
+const uploadBase = process.env.VERCEL ? os.tmpdir() : path.join(__dirname, "../../uploads");
+const uploadRoot = path.join(uploadBase, "evidence");
 fs.mkdirSync(uploadRoot, { recursive: true });
 
 const allowedMimeTypes = new Set(["image/png", "image/jpeg", "application/pdf", "video/mp4"]);
