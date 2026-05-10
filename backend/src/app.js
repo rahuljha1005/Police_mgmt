@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
+const databaseMiddleware = require("./middleware/db.middleware");
 const adminRoutes = require("./modules/admin/admin.routes");
 const analyticsRoutes = require("./modules/analytics/analytics.routes");
 const authRoutes = require("./modules/auth/auth.routes");
@@ -14,7 +15,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use(morgan("dev"));
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 app.use("/uploads", express.static("uploads"));
 
 app.get("/favicon.ico", (req, res) => {
@@ -32,10 +33,12 @@ app.get("/", (req, res) => {
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "Police Management API is running",
-    timestamp: new Date().toISOString(),
   });
 });
+
+// Health checks stay above this middleware so Vercel can verify the function
+// even when MongoDB credentials or Atlas networking are misconfigured.
+app.use("/api", databaseMiddleware);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);

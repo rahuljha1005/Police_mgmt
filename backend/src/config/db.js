@@ -1,19 +1,36 @@
 const mongoose = require("mongoose");
 
+let cachedConnection = null;
+let cachedConnectionPromise = null;
+
 const connectDB = async () => {
   if (mongoose.connection.readyState === 1) {
-    return mongoose.connection;
+    cachedConnection = mongoose.connection;
+    return cachedConnection;
   }
 
-  const mongoUri =
-    process.env.MONGO_URI || "mongodb://127.0.0.1:27017/police-management";
+  if (cachedConnection) {
+    return cachedConnection;
+  }
 
-  await mongoose.connect(mongoUri, {
-    serverSelectionTimeoutMS: 5000,
-  });
-  console.log("MongoDB connected");
+  const mongoUri = process.env.MONGO_URI;
 
-  return mongoose.connection;
+  if (!mongoUri) {
+    throw new Error("MONGO_URI environment variable is not configured");
+  }
+
+  if (!cachedConnectionPromise) {
+    // Serverless functions are reused between requests. Caching the connection
+    // promise prevents opening a new MongoDB connection on every invocation.
+    cachedConnectionPromise = mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 5000,
+    });
+  }
+
+  await cachedConnectionPromise;
+  cachedConnection = mongoose.connection;
+
+  return cachedConnection;
 };
 
 module.exports = connectDB;
