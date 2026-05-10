@@ -22,9 +22,14 @@ const connectDB = async () => {
   if (!cachedConnectionPromise) {
     // Serverless functions are reused between requests. Caching the connection
     // promise prevents opening a new MongoDB connection on every invocation.
-    cachedConnectionPromise = mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 5000,
-    });
+    cachedConnectionPromise = mongoose
+      .connect(mongoUri, {
+        serverSelectionTimeoutMS: 5000,
+      })
+      .catch((error) => {
+        cachedConnectionPromise = null;
+        throw error;
+      });
   }
 
   await cachedConnectionPromise;

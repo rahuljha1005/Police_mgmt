@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
+const connectDB = require("./config/db");
 const databaseMiddleware = require("./middleware/db.middleware");
 const adminRoutes = require("./modules/admin/admin.routes");
 const analyticsRoutes = require("./modules/analytics/analytics.routes");
@@ -34,6 +35,25 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
   });
+});
+
+app.get("/api/db-health", async (req, res) => {
+  try {
+    await connectDB();
+
+    return res.status(200).json({
+      success: true,
+      database: "connected",
+    });
+  } catch (error) {
+    console.error("Database health check failed:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Database connection failed",
+      error: error.message,
+    });
+  }
 });
 
 // Health checks stay above this middleware so Vercel can verify the function
