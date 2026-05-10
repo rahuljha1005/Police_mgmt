@@ -37,5 +37,15 @@ module.exports = async (req, res) => {
     });
   }
 
-  return getApp()(req, res);
+  try {
+    return getApp()(req, res);
+  } catch (error) {
+    console.error("Application handler failed:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Application handler failed",
+      error: error.message,
+    });
+  }
 };
