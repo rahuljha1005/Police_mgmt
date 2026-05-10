@@ -7,8 +7,18 @@ dotenv.config();
 let dbConnection;
 
 module.exports = async (req, res) => {
-  dbConnection = dbConnection || connectDB();
-  await dbConnection;
+  try {
+    dbConnection = dbConnection || connectDB();
+    await dbConnection;
+  } catch (error) {
+    console.error("Database connection failed:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Database connection failed",
+      error: process.env.NODE_ENV === "production" ? undefined : error.message,
+    });
+  }
 
   return app(req, res);
 };
