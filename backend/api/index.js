@@ -1,10 +1,10 @@
 const dotenv = require("dotenv");
-const connectDB = require("../src/config/db");
 
 dotenv.config();
 
 let dbConnection;
 let app;
+let connectDB;
 
 const getApp = () => {
   app = app || require("../src/app");
@@ -25,6 +25,7 @@ module.exports = async (req, res) => {
   }
 
   try {
+    connectDB = connectDB || require("../src/config/db");
     dbConnection = dbConnection || connectDB();
     await dbConnection;
   } catch (error) {
