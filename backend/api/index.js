@@ -7,7 +7,7 @@ dotenv.config();
 let dbConnection;
 
 module.exports = async (req, res) => {
-  if (req.url === "/" || req.url.startsWith("/api/health")) {
+  if (req.url === "/" || req.url === "/favicon.ico" || req.url.startsWith("/api/health")) {
     return app(req, res);
   }
 
