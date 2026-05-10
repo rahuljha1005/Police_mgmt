@@ -1,14 +1,27 @@
 const dotenv = require("dotenv");
-const app = require("../src/app");
 const connectDB = require("../src/config/db");
 
 dotenv.config();
 
 let dbConnection;
+let app;
+
+const getApp = () => {
+  app = app || require("../src/app");
+  return app;
+};
 
 module.exports = async (req, res) => {
-  if (req.url === "/" || req.url === "/favicon.ico" || req.url.startsWith("/api/health")) {
-    return app(req, res);
+  if (req.url === "/favicon.ico") {
+    return res.status(204).end();
+  }
+
+  if (req.url === "/" || req.url.startsWith("/api/health")) {
+    return res.status(200).json({
+      success: true,
+      message: "Police Management API is running",
+      timestamp: new Date().toISOString(),
+    });
   }
 
   try {
@@ -24,5 +37,5 @@ module.exports = async (req, res) => {
     });
   }
 
-  return app(req, res);
+  return getApp()(req, res);
 };
