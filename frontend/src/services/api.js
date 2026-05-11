@@ -16,12 +16,35 @@ const normalizeBase = (url) => {
 };
 
 const normalizedConfigured = normalizeBase(configuredApiBaseUrl);
-const apiBaseUrl = normalizedConfigured.replace(/\/$/, "").endsWith("/api")
-  ? normalizedConfigured.replace(/\/$/, "")
-  : `${normalizedConfigured.replace(/\/$/, "")}/api`;
+
+const deriveBaseFromAbsolute = (full) => {
+  try {
+    const u = new URL(full);
+    const pathname = u.pathname || "";
+    const apiIndex = pathname.toLowerCase().indexOf("/api");
+
+    if (apiIndex >= 0) {
+    
+      return `${u.origin}${pathname.slice(0, apiIndex + 4)}`.replace(/\/$/, "");
+    }
+
+    return u.origin;
+  } catch (e) {
+    return full;
+  }
+};
+
+const baseCandidate = normalizedConfigured.match(/^https?:\/\//i)
+  ? deriveBaseFromAbsolute(normalizedConfigured)
+  : normalizedConfigured;
+
+const apiBaseUrl = baseCandidate.replace(/\/$/, "").endsWith("/api")
+  ? baseCandidate.replace(/\/$/, "")
+  : `${baseCandidate.replace(/\/$/, "")}/api`;
 
 console.log("[api] VITE_API_BASE_URL:", import.meta.env.VITE_API_BASE_URL || "(not set)");
 console.log("[api] normalized configured API base:", normalizedConfigured);
+console.log("[api] base candidate:", baseCandidate);
 console.log("[api] resolved API base URL:", apiBaseUrl);
 
 if (isProduction && apiBaseUrl.includes("localhost")) {
