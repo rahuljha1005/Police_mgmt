@@ -1,5 +1,3 @@
-const { faker } = require("@faker-js/faker");
-
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: 5 }, (_, index) => CURRENT_YEAR - 4 + index);
 const CRIME_TYPES = ["Theft", "Fraud", "Cyber Crime", "Assault", "Robbery", "Domestic Violence", "Drug Trafficking", "Kidnapping"];
@@ -34,9 +32,14 @@ const slugify = (value = "") =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
+const seededRandom = (seed) => {
+  const value = Math.sin(seed) * 10000;
+  return value - Math.floor(value);
+};
+
 const seededNumber = (seed, min, max, precision = 0) => {
-  faker.seed(seed);
-  return faker.number.float({ min, max, fractionDigits: precision });
+  const value = min + seededRandom(seed) * (max - min);
+  return Number(value.toFixed(precision));
 };
 
 const categoryForScore = (score) => {
