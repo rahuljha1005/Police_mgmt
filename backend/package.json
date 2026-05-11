@@ -11,7 +11,8 @@
     "start": "node src/server.js",
     "seed": "node src/seeds/seed.js",
     "seed:geo": "node src/seeds/seedGeoAnalytics.js",
-    "seed:admin": "node src/utils/seedAdmin.js"
+    "seed:admin": "node src/utils/seedAdmin.js",
+    "repair:accounts": "node src/utils/repairDemoAccounts.js"
   },
   "keywords": [],
   "author": "",

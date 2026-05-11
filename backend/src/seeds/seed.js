@@ -157,12 +157,15 @@ const seedPatrols = async ({ stations, officers }) => {
 
 const seedCivilians = async (faker) => {
   const civilianPhone = createPhoneFactory("97");
+  const password = await bcrypt.hash(DEFAULT_PASSWORD, 12);
   const civilians = Array.from({ length: CIVILIAN_COUNT }, (_, index) => {
     const name = randomIndianName();
     return {
       name,
       phone: civilianPhone(),
       email: `${name.toLowerCase().replace(/\s+/g, ".")}.${index + 1}@example.in`,
+      password,
+      status: "ACTIVE",
       address: randomMumbaiAddress(),
       createdAt: randomPastDate(365),
       updatedAt: new Date(),
@@ -414,6 +417,10 @@ const runSeed = async () => {
   faker.seed(20260508);
 
   await connectDB();
+  if (process.env.CONFIRM_RESET !== "true") {
+    throw new Error("Refusing to clear database. Set CONFIRM_RESET=true only when you intentionally want to reseed demo data.");
+  }
+
   console.log("Clearing existing demo data...");
   await clearDatabase();
 
