@@ -72,9 +72,12 @@ const registerCivilian = async (payload) => {
 };
 
 const loginCivilian = async ({ email, password }, options = {}) => {
-  const civilian = await Civilian.findOne({ email }).select("+password");
+  const normalizedEmail = email.trim().toLowerCase();
+  console.log("[auth:civilian] finding civilian", { email: normalizedEmail });
+  const civilian = await Civilian.findOne({ email: normalizedEmail }).select("+password");
 
   if (!civilian) {
+    console.log("[auth:civilian] civilian not found", { email: normalizedEmail });
     if (!options.repaired && (await maybeRepairDemoCivilian({ email, password }))) {
       return loginCivilian({ email, password }, { repaired: true });
     }
@@ -83,6 +86,12 @@ const loginCivilian = async ({ email, password }, options = {}) => {
   }
 
   const isPasswordValid = await bcrypt.compare(password, civilian.password || "");
+  console.log("[auth:civilian] password comparison complete", {
+    email: normalizedEmail,
+    status: civilian.status,
+    isPasswordValid,
+  });
+
   if (!isPasswordValid) {
     if (!options.repaired && (await maybeRepairDemoCivilian({ email, password }))) {
       return loginCivilian({ email, password }, { repaired: true });
@@ -101,6 +110,10 @@ const loginCivilian = async ({ email, password }, options = {}) => {
   }
 
   assertJwtSecret();
+  console.log("[auth:civilian] JWT secret present, generating token", {
+    email: normalizedEmail,
+    type: "CIVILIAN",
+  });
 
   const token = jwt.sign(
     {

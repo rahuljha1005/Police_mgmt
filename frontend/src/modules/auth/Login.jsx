@@ -21,6 +21,11 @@ const Login = () => {
     setError("");
     setLoading(true);
     try {
+      console.log("[auth:police] submitting login", {
+        email: form.email,
+        hasBadgeNumber: Boolean(form.badgeNumber),
+        apiBaseUrl: import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "(fallback)",
+      });
       const response = await login(form);
       const session = loginPolice({
         token: response.data.token,
@@ -29,8 +34,17 @@ const Login = () => {
           isFirstLogin: response.data.requiresPasswordReset || response.data.user?.isFirstLogin,
         },
       });
+      console.log("[auth:police] session stored", {
+        email: session.user.email,
+        role: session.user.role,
+        redirectTo: getDefaultRoute(session.user),
+      });
       navigate(getDefaultRoute(session.user), { replace: true });
     } catch (err) {
+      console.error("[auth:police] login failed", {
+        status: err.response?.status,
+        message: err.response?.data?.message || err.message,
+      });
       setError(err.response?.data?.message || "Unable to login.");
     } finally {
       setLoading(false);

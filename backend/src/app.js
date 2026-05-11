@@ -20,18 +20,33 @@ const transferRoutes = require("./modules/transfer/transfer.routes");
 const { isCloudinaryConfigured } = require("./config/cloudinary");
 
 const app = express();
-const allowedOrigins = (process.env.CORS_ORIGIN || process.env.FRONTEND_URL || "")
+const defaultOrigins = ["http://localhost:5173", "http://127.0.0.1:5173"];
+const allowedOrigins = [
+  ...defaultOrigins,
+  ...(process.env.CORS_ORIGIN || process.env.FRONTEND_URL || "")
   .split(",")
   .map((origin) => origin.trim())
-  .filter(Boolean);
+    .filter(Boolean),
+];
+
+const normalizeOrigin = (origin) => origin?.replace(/\/$/, "");
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+
+  const normalized = normalizeOrigin(origin);
+  const configuredOrigins = allowedOrigins.map(normalizeOrigin);
+
+  return configuredOrigins.includes(normalized) || /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(normalized);
+};
 
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      if (isAllowedOrigin(origin)) {
         return callback(null, true);
       }
 
+      console.error("CORS blocked request", { origin, allowedOrigins });
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
@@ -48,12 +63,21 @@ app.get("/", (req, res) => {
   res.status(200).send("API WORKING");
 });
 
+app.get("/api", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Police Management API is running",
+    authRoutes: ["/api/auth/login", "/api/civilian-auth/login"],
+  });
+});
+
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
     message: "API running",
     mongoUriExists: Boolean(process.env.MONGODB_URI || process.env.MONGO_URI),
     jwtExists: Boolean(process.env.JWT_SECRET),
+    corsOrigins: allowedOrigins,
     cloudinaryConfigured: isCloudinaryConfigured(),
   });
 });

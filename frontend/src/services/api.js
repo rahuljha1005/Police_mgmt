@@ -1,8 +1,25 @@
 import axios from "axios";
 import { emitAuthLogout, getStoredSession, isTokenExpired } from "../auth/auth.utils";
 
+const isProduction = import.meta.env.PROD;
+const configuredApiBaseUrl =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_URL ||
+  (isProduction ? "/api" : "http://localhost:5000/api");
+const apiBaseUrl = configuredApiBaseUrl.replace(/\/$/, "").endsWith("/api")
+  ? configuredApiBaseUrl.replace(/\/$/, "")
+  : `${configuredApiBaseUrl.replace(/\/$/, "")}/api`;
+
+console.log("[api] VITE_API_BASE_URL:", import.meta.env.VITE_API_BASE_URL || "(not set)");
+console.log("[api] resolved API base URL:", apiBaseUrl);
+
+if (isProduction && apiBaseUrl.includes("localhost")) {
+  console.error("[api] Production API URL is pointing to localhost. Set VITE_API_BASE_URL to the deployed backend /api URL.");
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  baseURL: apiBaseUrl,
+  timeout: 20000,
 });
 
 api.interceptors.request.use((config) => {
@@ -18,12 +35,31 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
+  console.log("[api] request", {
+    method: config.method?.toUpperCase(),
+    url: `${config.baseURL || ""}${config.url || ""}`,
+    hasToken: Boolean(token),
+  });
+
   return config;
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log("[api] response", {
+      status: response.status,
+      url: response.config?.url,
+    });
+
+    return response;
+  },
   (error) => {
+    console.error("[api] error", {
+      status: error.response?.status,
+      url: error.config?.url,
+      message: error.response?.data?.message || error.message,
+    });
+
     if (error.response?.status === 401) {
       emitAuthLogout("invalid-session");
     }

@@ -97,9 +97,12 @@ const registerPoliceUser = async (payload, actor) => {
 };
 
 const loginPoliceUser = async ({ email, badgeNumber, password }, options = {}) => {
-  const user = await User.findOne({ email }).select("+password");
+  const normalizedEmail = email.trim().toLowerCase();
+  console.log("[auth:police] finding user", { email: normalizedEmail });
+  const user = await User.findOne({ email: normalizedEmail }).select("+password");
 
   if (!user) {
+    console.log("[auth:police] user not found", { email: normalizedEmail });
     if (!options.repaired && (await maybeRepairDemoPoliceAccount({ email, password }))) {
       return loginPoliceUser({ email, badgeNumber, password }, { repaired: true });
     }
@@ -116,6 +119,13 @@ const loginPoliceUser = async ({ email, badgeNumber, password }, options = {}) =
   }
 
   const isPasswordValid = await bcrypt.compare(password, user.password);
+  console.log("[auth:police] password comparison complete", {
+    email: normalizedEmail,
+    role: user.role,
+    status: user.status,
+    isPasswordValid,
+  });
+
   if (!isPasswordValid) {
     if (!options.repaired && (await maybeRepairDemoPoliceAccount({ email, password }))) {
       return loginPoliceUser({ email, badgeNumber, password }, { repaired: true });
@@ -147,6 +157,11 @@ const loginPoliceUser = async ({ email, badgeNumber, password }, options = {}) =
   }
 
   assertJwtSecret();
+  console.log("[auth:police] JWT secret present, generating token", {
+    email: normalizedEmail,
+    role: user.role,
+    type: "POLICE",
+  });
 
   const token = jwt.sign(
     {

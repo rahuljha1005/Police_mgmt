@@ -21,13 +21,25 @@ const CivilianLogin = () => {
     setLoading(true);
 
     try {
+      console.log("[auth:civilian] submitting login", {
+        email: form.email,
+        apiBaseUrl: import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "(fallback)",
+      });
       const response = await civilianLogin(form);
       const session = loginCivilian({
         token: response.data.token,
         user: response.data.civilian,
       });
+      console.log("[auth:civilian] session stored", {
+        email: session.user.email,
+        redirectTo: getDefaultRoute(session.user),
+      });
       navigate(getDefaultRoute(session.user), { replace: true });
     } catch (err) {
+      console.error("[auth:civilian] login failed", {
+        status: err.response?.status,
+        message: err.response?.data?.message || err.message,
+      });
       setError(err.response?.data?.message || "Unable to login.");
     } finally {
       setLoading(false);

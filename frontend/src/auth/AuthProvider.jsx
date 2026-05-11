@@ -47,6 +47,12 @@ const AuthProvider = ({ children }) => {
 
   const applySession = useCallback((nextSession) => {
     const storedSession = persistSession(nextSession);
+    console.log("[auth] persisted session", {
+      type: storedSession.sessionType,
+      role: storedSession.user?.role,
+      email: storedSession.user?.email,
+      hasToken: Boolean(storedSession.token),
+    });
     setSession(storedSession);
     return storedSession;
   }, []);
@@ -70,6 +76,11 @@ const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const storedSession = getStoredSession();
+    console.log("[auth] restored session", {
+      hasSession: Boolean(storedSession),
+      type: storedSession?.sessionType,
+      role: storedSession?.user?.role,
+    });
     setSession(storedSession || emptySession);
     setLoading(false);
   }, []);

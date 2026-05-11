@@ -32,10 +32,29 @@ const register = async (req, res, next) => {
 
 const login = async (req, res, next) => {
   try {
+    console.log("[auth:police] login request received", {
+      email: req.body?.email,
+      hasBadgeNumber: Boolean(req.body?.badgeNumber),
+      hasPassword: Boolean(req.body?.password),
+      origin: req.get("origin"),
+    });
+
     const { error, value } = validate(policeLoginSchema, req.body);
-    if (error) return validationErrorResponse(res, error);
+    if (error) {
+      console.log("[auth:police] login validation failed", {
+        email: req.body?.email,
+        message: error.details.map((detail) => detail.message).join(", "),
+      });
+      return validationErrorResponse(res, error);
+    }
 
     const result = await policeAuthService.loginPoliceUser(value);
+    console.log("[auth:police] login success", {
+      email: result.user.email,
+      role: result.user.role,
+      requiresPasswordReset: result.requiresPasswordReset,
+      tokenGenerated: Boolean(result.token),
+    });
 
     return res.status(200).json({
       success: true,
