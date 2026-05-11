@@ -6,11 +6,22 @@ const configuredApiBaseUrl =
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
   (isProduction ? "/api" : "http://localhost:5000/api");
-const apiBaseUrl = configuredApiBaseUrl.replace(/\/$/, "").endsWith("/api")
-  ? configuredApiBaseUrl.replace(/\/$/, "")
-  : `${configuredApiBaseUrl.replace(/\/$/, "")}/api`;
+
+const normalizeBase = (url) => {
+  if (!url) return url;
+  let v = String(url).trim();
+  v = v.replace(/^(https?:)\/(?=[^\/])/i, "$1//");
+  v = v.replace(/^(https?:)\/\/+/, "$1//");
+  return v;
+};
+
+const normalizedConfigured = normalizeBase(configuredApiBaseUrl);
+const apiBaseUrl = normalizedConfigured.replace(/\/$/, "").endsWith("/api")
+  ? normalizedConfigured.replace(/\/$/, "")
+  : `${normalizedConfigured.replace(/\/$/, "")}/api`;
 
 console.log("[api] VITE_API_BASE_URL:", import.meta.env.VITE_API_BASE_URL || "(not set)");
+console.log("[api] normalized configured API base:", normalizedConfigured);
 console.log("[api] resolved API base URL:", apiBaseUrl);
 
 if (isProduction && apiBaseUrl.includes("localhost")) {
