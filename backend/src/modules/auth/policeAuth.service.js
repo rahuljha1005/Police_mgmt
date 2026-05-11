@@ -106,11 +106,6 @@ const loginPoliceUser = async ({ email, badgeNumber, password }) => {
     throw new AuthError("Invalid email or password");
   }
 
-  if (user.role !== "ADMIN" && !badgeNumber) {
-    await writeAuditLog({ userId: user._id, action: "FAILED_LOGIN", status: "failed" });
-    throw new AuthError("Badge ID is required for police personnel");
-  }
-
   if (badgeNumber && user.badgeNumber && user.badgeNumber !== badgeNumber) {
     await writeAuditLog({ userId: user._id, action: "FAILED_LOGIN", status: "failed" });
     throw new AuthError("Invalid badge ID, email, or password");

@@ -69,7 +69,7 @@ const Login = () => {
           </div>
 
           <form className="mt-6 space-y-4" onSubmit={submit}>
-            <Input label="Badge ID" name="badgeNumber" onChange={updateForm} placeholder="Optional for admin accounts" value={form.badgeNumber} />
+            <Input label="Badge ID" name="badgeNumber" onChange={updateForm} placeholder="Optional" value={form.badgeNumber} />
             <Input label="Official Email" name="email" onChange={updateForm} type="email" value={form.email} />
             <div className="relative">
               <Input label="Password" name="password" onChange={updateForm} type={showPassword ? "text" : "password"} value={form.password} />
