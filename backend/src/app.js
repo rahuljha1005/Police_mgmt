@@ -45,18 +45,14 @@ app.get("/favicon.ico", (req, res) => {
 });
 
 app.get("/", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Police Management API is running",
-    health: "/api/health",
-  });
+  res.status(200).send("API WORKING");
 });
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
     message: "API running",
-    mongoUriExists: Boolean(process.env.MONGO_URI),
+    mongoUriExists: Boolean(process.env.MONGODB_URI || process.env.MONGO_URI),
     jwtExists: Boolean(process.env.JWT_SECRET),
     cloudinaryConfigured: isCloudinaryConfigured(),
   });

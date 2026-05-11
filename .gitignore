@@ -6,3 +6,4 @@ npm-debug.log*
 *.log
 *.md
 *.txt
+backend/uploads/
