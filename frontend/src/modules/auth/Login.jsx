@@ -3,10 +3,12 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
+import { useAuth } from "../../auth/useAuth";
 import { login } from "../../services/auth.api";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { getDefaultRoute, loginPolice } = useAuth();
   const [form, setForm] = useState({ badgeNumber: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -20,9 +22,14 @@ const Login = () => {
     setLoading(true);
     try {
       const response = await login(form);
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
-      navigate(response.data.requiresPasswordReset ? "/police/reset-password" : "/dashboard");
+      const session = loginPolice({
+        token: response.data.token,
+        user: {
+          ...response.data.user,
+          isFirstLogin: response.data.requiresPasswordReset || response.data.user?.isFirstLogin,
+        },
+      });
+      navigate(getDefaultRoute(session.user), { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "Unable to login.");
     } finally {

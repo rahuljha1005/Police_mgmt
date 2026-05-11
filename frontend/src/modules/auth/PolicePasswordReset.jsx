@@ -3,10 +3,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
+import { useAuth } from "../../auth/useAuth";
 import { resetTemporaryPassword } from "../../services/auth.api";
 
 const PolicePasswordReset = () => {
   const navigate = useNavigate();
+  const { updateUser } = useAuth();
   const [form, setForm] = useState({ currentPassword: "", newPassword: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -20,8 +22,8 @@ const PolicePasswordReset = () => {
     setLoading(true);
     try {
       const response = await resetTemporaryPassword(form);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
-      navigate("/dashboard");
+      updateUser(response.data.user);
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "Unable to update password.");
     } finally {

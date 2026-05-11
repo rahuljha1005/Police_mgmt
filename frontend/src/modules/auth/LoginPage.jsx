@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../auth/useAuth";
 import api from "../../services/api";
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { getDefaultRoute, loginPolice } = useAuth();
   const [form, setForm] = useState({
     email: "admin@police.com",
     password: "Password@123",
@@ -25,9 +27,14 @@ const LoginPage = () => {
 
     try {
       const response = await api.post("/auth/login", form);
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
-      navigate("/dashboard");
+      const session = loginPolice({
+        token: response.data.token,
+        user: {
+          ...response.data.user,
+          isFirstLogin: response.data.requiresPasswordReset || response.data.user?.isFirstLogin,
+        },
+      });
+      navigate(getDefaultRoute(session.user), { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "Unable to login. Please try again.");
     } finally {

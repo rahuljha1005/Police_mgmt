@@ -1,11 +1,18 @@
 import axios from "axios";
+import { emitAuthLogout, getStoredSession, isTokenExpired } from "../auth/auth.utils";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+  const session = getStoredSession();
+  const token = session?.token;
+
+  if (token && isTokenExpired(token)) {
+    emitAuthLogout("expired");
+    return Promise.reject(new axios.Cancel("Session expired"));
+  }
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -18,14 +25,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-
-      if (window.location.pathname.startsWith("/civilian")) {
-        window.location.href = "/civilian/login";
-      } else if (window.location.pathname !== "/police/login") {
-        window.location.href = "/police/login";
-      }
+      emitAuthLogout("invalid-session");
     }
 
     return Promise.reject(error);

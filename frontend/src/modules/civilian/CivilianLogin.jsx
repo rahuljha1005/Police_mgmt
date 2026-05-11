@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../auth/useAuth";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import { civilianLogin } from "../../services/civilianAuth.api";
 
 const CivilianLogin = () => {
   const navigate = useNavigate();
+  const { getDefaultRoute, loginCivilian } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -20,9 +22,11 @@ const CivilianLogin = () => {
 
     try {
       const response = await civilianLogin(form);
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("user", JSON.stringify(response.data.civilian));
-      navigate("/civilian/dashboard");
+      const session = loginCivilian({
+        token: response.data.token,
+        user: response.data.civilian,
+      });
+      navigate(getDefaultRoute(session.user), { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "Unable to login.");
     } finally {
