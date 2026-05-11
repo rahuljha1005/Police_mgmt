@@ -1,11 +1,9 @@
-require("../config/env");
-
 const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
 const connectDB = require("../config/db");
 const { Civilian, PoliceStation, User } = require("../models");
 
-const DEFAULT_PASSWORD = process.env.DEMO_PASSWORD || "Password@123";
+const DEFAULT_PASSWORD = "Password@123";
 
 const stationData = {
   name: "Colaba Police Station",
@@ -18,8 +16,8 @@ const stationData = {
   zone: "South Mumbai",
 };
 
-const upsertUser = async (payload) => {
-  const hashedPassword = await bcrypt.hash(DEFAULT_PASSWORD, 12);
+const upsertUser = async (payload, password) => {
+  const hashedPassword = await bcrypt.hash(password, 12);
   const identity = [
     { email: payload.email },
     { phone: payload.phone },
@@ -46,8 +44,8 @@ const upsertUser = async (payload) => {
   return user;
 };
 
-const upsertCivilian = async () => {
-  const hashedPassword = await bcrypt.hash(DEFAULT_PASSWORD, 12);
+const upsertCivilian = async (password) => {
+  const hashedPassword = await bcrypt.hash(password, 12);
   return Civilian.findOneAndUpdate(
     { email: "civilian@example.com" },
     {
@@ -68,9 +66,11 @@ const upsertCivilian = async () => {
   );
 };
 
-const repairDemoAccounts = async () => {
+const repairDemoAccounts = async ({ connect = true, disconnect = false, password = process.env.DEMO_PASSWORD || DEFAULT_PASSWORD } = {}) => {
   try {
-    await connectDB();
+    if (connect) {
+      await connectDB();
+    }
 
     const station = await PoliceStation.findOneAndUpdate(
       { name: stationData.name },
@@ -84,7 +84,7 @@ const repairDemoAccounts = async () => {
       phone: "9999990000",
       role: "ADMIN",
       state_id: "Maharashtra",
-    });
+    }, password);
 
     const dgp = await upsertUser({
       name: "DGP Maharashtra Command",
@@ -93,7 +93,7 @@ const repairDemoAccounts = async () => {
       badgeNumber: "MH-DGP-00001",
       role: "DGP",
       state_id: "Maharashtra",
-    });
+    }, password);
 
     const officer = await upsertUser({
       name: "Demo Inspector",
@@ -106,23 +106,37 @@ const repairDemoAccounts = async () => {
       district_id: station.district,
       zone_id: station.zone,
       assigned_zone_id: station.zone,
-    });
+    }, password);
 
-    const civilian = await upsertCivilian();
+    const civilian = await upsertCivilian(password);
 
     console.log("Demo accounts repaired:");
     console.table([
-      { type: "ADMIN", email: admin.email, password: DEFAULT_PASSWORD },
-      { type: "DGP", email: dgp.email, badgeNumber: dgp.badgeNumber, password: DEFAULT_PASSWORD },
-      { type: "INSPECTOR", email: officer.email, badgeNumber: officer.badgeNumber, password: DEFAULT_PASSWORD },
-      { type: "CIVILIAN", email: civilian.email, password: DEFAULT_PASSWORD },
+      { type: "ADMIN", email: admin.email, password },
+      { type: "DGP", email: dgp.email, badgeNumber: dgp.badgeNumber, password },
+      { type: "INSPECTOR", email: officer.email, badgeNumber: officer.badgeNumber, password },
+      { type: "CIVILIAN", email: civilian.email, password },
     ]);
+
+    return { admin, dgp, officer, civilian };
   } catch (error) {
     console.error("Failed to repair demo accounts:", error.message);
-    process.exitCode = 1;
+    throw error;
   } finally {
-    await mongoose.disconnect();
+    if (disconnect) {
+      await mongoose.disconnect();
+    }
   }
 };
 
-repairDemoAccounts();
+if (require.main === module) {
+  require("../config/env");
+  repairDemoAccounts({ disconnect: true }).catch(() => {
+    process.exitCode = 1;
+  });
+}
+
+module.exports = {
+  DEFAULT_PASSWORD,
+  repairDemoAccounts,
+};
