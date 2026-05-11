@@ -35,6 +35,22 @@ const FirDetails = () => {
         <DetailCard label="Longitude" value={fir.location?.longitude} />
         <DetailCard label="Priority" value={fir.priority} />
       </div>
+      <article className="rounded-lg border border-white/10 bg-police-panel p-5">
+        <h2 className="text-lg font-semibold text-white">Transfer / Handover History</h2>
+        <div className="mt-4 space-y-3">
+          {(fir.transferHistory || []).length ? fir.transferHistory.map((entry) => (
+            <div className="border-l border-police-accent/50 pl-4" key={entry._id || entry.transferredAt}>
+              <p className="text-sm font-semibold text-white">
+                {entry.fromOfficer?.name || "Unassigned"} → {entry.toOfficer?.name || "Officer"}
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">
+                {entry.reason} / by {entry.transferredBy?.name || "Command"} / {formatDate(entry.transferredAt)}
+              </p>
+              {entry.notes && <p className="mt-1 text-sm text-zinc-300">{entry.notes}</p>}
+            </div>
+          )) : <p className="text-sm text-zinc-500">No handover history recorded.</p>}
+        </div>
+      </article>
     </section>
   );
 };

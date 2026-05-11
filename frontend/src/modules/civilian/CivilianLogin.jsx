@@ -33,8 +33,11 @@ const CivilianLogin = () => {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#17120f] px-4 py-8 text-white">
       <section className="w-full max-w-md rounded-lg border border-white/10 bg-[#241b17] p-6 shadow-2xl shadow-black/40">
-        <p className="text-sm font-semibold uppercase text-amber-300">Citizen Services</p>
-        <h1 className="mt-2 text-3xl font-semibold">Civilian Login</h1>
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300">Public Safety Portal</p>
+        <h1 className="mt-2 text-3xl font-semibold">Citizen Services Login</h1>
+        <p className="mt-3 text-sm leading-6 text-zinc-400">
+          Access complaint tracking, SOS history, and public safety intelligence from a citizen-first portal.
+        </p>
         <form className="mt-7 space-y-4" onSubmit={submit}>
           <Input label="Email" name="email" onChange={updateForm} type="email" value={form.email} />
           <div className="relative">
@@ -52,8 +55,9 @@ const CivilianLogin = () => {
           </Button>
           <div className="flex justify-between text-sm">
             <Link className="text-amber-300 hover:text-white" to="/civilian/signup">Create civilian account</Link>
-            <Link className="text-zinc-400 hover:text-white" to="/login">Police login</Link>
+            <Link className="text-zinc-400 hover:text-white" to="/police/login">Police secure access</Link>
           </div>
+          <Link className="block text-center text-sm text-zinc-500 hover:text-white" to="/">Choose another portal</Link>
         </form>
       </section>
     </main>

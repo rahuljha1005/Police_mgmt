@@ -18,7 +18,7 @@ export const useAuth = () => {
     const isCivilian = user?.type === "CIVILIAN" || window.location.pathname.startsWith("/civilian");
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    navigate(isCivilian ? "/civilian/login" : "/login");
+    navigate(isCivilian ? "/civilian/login" : "/police/login");
   };
 
   return {

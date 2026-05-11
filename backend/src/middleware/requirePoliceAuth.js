@@ -40,8 +40,11 @@ const buildPoliceAuth = ({ optional = false } = {}) => async (req, res, next) =>
       role: user.role,
       email: user.email,
       name: user.name,
+      state_id: user.state_id,
+      district_id: user.district_id,
       police_station_id: user.police_station_id,
       zone_id: user.zone_id,
+      assigned_zone_id: user.assigned_zone_id,
     };
 
     return next();

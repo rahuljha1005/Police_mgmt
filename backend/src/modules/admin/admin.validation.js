@@ -1,7 +1,7 @@
 const Joi = require("joi");
 
 const objectIdPattern = /^[0-9a-fA-F]{24}$/;
-const officerRoles = ["CONSTABLE", "INSPECTOR", "SP"];
+const officerRoles = ["CONSTABLE", "INSPECTOR", "SP", "DGP"];
 const accountRoles = [...officerRoles, "ADMIN"];
 
 const createOfficerSchema = Joi.object({
@@ -61,7 +61,7 @@ const getOfficersQuerySchema = Joi.object({
   police_station_id: Joi.string().pattern(objectIdPattern).messages({
     "string.pattern.base": "Police station ID must be a valid ObjectId",
   }),
-  status: Joi.string().valid("PENDING", "ACTIVE", "SUSPENDED", "pending", "active", "rejected"),
+  status: Joi.string().valid("PENDING", "ACTIVE", "SUSPENDED", "TRANSFERRED", "INACTIVE", "pending", "active", "rejected"),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(10),
 });

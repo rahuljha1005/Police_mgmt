@@ -63,6 +63,27 @@ const complaintSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "FIR",
     },
+    transferHistory: [
+      {
+        fromOfficer: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        toOfficer: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+        transferredBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+        reason: {
+          type: String,
+          enum: [
+            "Officer Transfer",
+            "Suspension",
+            "Workload Redistribution",
+            "Emergency Reassignment",
+            "Promotion",
+            "Temporary Assignment",
+          ],
+          required: true,
+        },
+        notes: { type: String, trim: true },
+        transferredAt: { type: Date, default: Date.now },
+      },
+    ],
   },
   {
     collection: "complaints",

@@ -8,13 +8,23 @@ const initialForm = { name: "", email: "", phone: "", role: "CONSTABLE", police_
 
 const CreateOfficerModal = ({ onClose, onSubmit, open, stations }) => {
   const [form, setForm] = useState(initialForm);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const update = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
 
   const submit = async (event) => {
     event.preventDefault();
-    await onSubmit(form);
-    setForm(initialForm);
+    setError("");
+    setLoading(true);
+    try {
+      await onSubmit(form);
+      setForm(initialForm);
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to create officer.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -30,7 +40,8 @@ const CreateOfficerModal = ({ onClose, onSubmit, open, stations }) => {
           <option value="">Select station</option>
           {stations.map((station) => <option key={station._id} value={station._id}>{station.name}</option>)}
         </Select>
-        <Button type="submit">Create Officer</Button>
+        {error && <div className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">{error}</div>}
+        <Button disabled={loading} type="submit">{loading ? "Creating..." : "Create Officer"}</Button>
       </form>
     </Modal>
   );

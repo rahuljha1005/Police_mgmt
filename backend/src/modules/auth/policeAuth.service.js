@@ -31,9 +31,13 @@ const sanitizeUser = (user) => ({
   badgeNumber: user.badgeNumber,
   role: user.role,
   status: user.status,
+  state_id: user.state_id,
+  district_id: user.district_id,
   police_station_id: user.police_station_id,
   zone_id: user.zone_id,
+  assigned_zone_id: user.assigned_zone_id,
   profileImage: user.profileImage,
+  isFirstLogin: Boolean(user.isFirstLogin),
   type: "POLICE",
 });
 
@@ -47,8 +51,8 @@ const registerPoliceUser = async (payload, actor) => {
   const role = payload.role || "CONSTABLE";
   const actorRole = actor?.role;
 
-  if (role !== "CONSTABLE" && actorRole !== "ADMIN") {
-    throw new AuthError("Only an admin can create SP, INSPECTOR, or ADMIN users", 403);
+  if (role !== "CONSTABLE" && !["ADMIN", "DGP"].includes(actorRole)) {
+    throw new AuthError("Only command authority can create DGP, SP, INSPECTOR, or ADMIN users", 403);
   }
 
   const duplicate = await User.findOne({
@@ -69,6 +73,7 @@ const registerPoliceUser = async (payload, actor) => {
     password: hashedPassword,
     role,
     status: actorRole === "ADMIN" ? "ACTIVE" : "PENDING",
+    isFirstLogin: actorRole === "ADMIN" && role !== "ADMIN",
   });
 
   await writeAuditLog({
@@ -80,7 +85,7 @@ const registerPoliceUser = async (payload, actor) => {
   return sanitizeUser(user);
 };
 
-const loginPoliceUser = async ({ email, password }) => {
+const loginPoliceUser = async ({ email, badgeNumber, password }) => {
   const user = await User.findOne({ email }).select("+password");
 
   if (!user) {
@@ -99,6 +104,16 @@ const loginPoliceUser = async ({ email, password }) => {
   if (!isPasswordValid) {
     await writeAuditLog({ userId: user._id, action: "FAILED_LOGIN", status: "failed" });
     throw new AuthError("Invalid email or password");
+  }
+
+  if (user.role !== "ADMIN" && !badgeNumber) {
+    await writeAuditLog({ userId: user._id, action: "FAILED_LOGIN", status: "failed" });
+    throw new AuthError("Badge ID is required for police personnel");
+  }
+
+  if (badgeNumber && user.badgeNumber && user.badgeNumber !== badgeNumber) {
+    await writeAuditLog({ userId: user._id, action: "FAILED_LOGIN", status: "failed" });
+    throw new AuthError("Invalid badge ID, email, or password");
   }
 
   if (blockedStatuses.has(user.status)) {
@@ -124,12 +139,34 @@ const loginPoliceUser = async ({ email, password }) => {
   await writeAuditLog({ userId: user._id, action: "LOGIN" });
 
   return {
+    requiresPasswordReset: Boolean(user.isFirstLogin),
     token,
     user: sanitizeUser(user),
   };
 };
 
+const resetTemporaryPassword = async ({ userId, currentPassword, newPassword }) => {
+  const user = await User.findById(userId).select("+password");
+  if (!user) throw new AuthError("Police user not found", 404);
+
+  const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+  if (!isPasswordValid) throw new AuthError("Current password is incorrect", 400);
+
+  user.password = await bcrypt.hash(newPassword, 12);
+  user.isFirstLogin = false;
+  await user.save();
+
+  await writeAuditLog({
+    userId: user._id,
+    action: "VERIFY_USER",
+    newValues: { password_reset: true, first_login_completed: true },
+  });
+
+  return sanitizeUser(user);
+};
+
 module.exports = {
   loginPoliceUser,
   registerPoliceUser,
+  resetTemporaryPassword,
 };

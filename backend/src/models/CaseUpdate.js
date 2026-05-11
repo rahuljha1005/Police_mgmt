@@ -65,7 +65,7 @@ const caseUpdateSchema = new mongoose.Schema(
     },
     updateType: {
       type: String,
-      enum: ["NOTE", "STATUS_CHANGED", "EVIDENCE_ADDED", "OFFICER_ASSIGNED", "SUSPECT_UPDATED"],
+      enum: ["NOTE", "STATUS_CHANGED", "EVIDENCE_ADDED", "OFFICER_ASSIGNED", "OFFICER_TRANSFERRED", "SUSPECT_UPDATED"],
       required: true,
       index: true,
     },

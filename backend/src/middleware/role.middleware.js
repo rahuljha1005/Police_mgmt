@@ -1,8 +1,8 @@
 const requireAdmin = (req, res, next) => {
-  if (!req.user || req.user.type !== "POLICE" || req.user.role !== "ADMIN") {
+  if (!req.user || req.user.type !== "POLICE" || !["ADMIN", "DGP"].includes(req.user.role)) {
     return res.status(403).json({
       success: false,
-      message: "Admin access is required",
+      message: "Command authority access is required",
     });
   }
 

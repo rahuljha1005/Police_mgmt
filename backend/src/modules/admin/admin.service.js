@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
-const { AuditLog, CrimeType, FIR, OfficerVerification, PoliceStation, User } = require("../../models");
+const { AuditLog, CrimeType, EmergencySOS, FIR, OfficerVerification, PatrolUnit, PoliceStation, User } = require("../../models");
+const { buildFirScope, buildPoliceStationScope, getJurisdictionLabel } = require("../../utils/jurisdiction");
 
 class ConflictError extends Error {
   constructor(message) {
@@ -26,9 +27,10 @@ class BadRequestError extends Error {
   }
 }
 
-const officerRoles = ["CONSTABLE", "INSPECTOR", "SP"];
+const officerRoles = ["CONSTABLE", "INSPECTOR", "SP", "DGP"];
 const accountRoles = [...officerRoles, "ADMIN"];
 const generateTemporaryPassword = () => crypto.randomBytes(12).toString("base64url");
+const generateBadgeNumber = (role) => `${role.slice(0, 3)}-${new Date().getFullYear()}-${crypto.randomInt(10000, 99999)}`;
 
 const sanitizeUser = (user) => {
   const userObject = user.toObject ? user.toObject() : user;
@@ -50,17 +52,21 @@ const writeAuditLog = async ({ adminId, action, entityType, entityId, oldValues,
 const createOfficer = async (officerData, adminId) => {
   const { name, email, phone, role, police_station_id } = officerData;
 
-  const existingUser = await User.findOne({ email });
+  const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
   if (existingUser) {
-    throw new ConflictError("A user with this email already exists");
+    throw new ConflictError("A user with this email or phone already exists");
   }
 
-  const policeStation = await PoliceStation.exists({ _id: police_station_id });
+  const policeStation = await PoliceStation.findById(police_station_id);
   if (!policeStation) {
     throw new NotFoundError("Police station not found");
   }
 
   const tempPassword = generateTemporaryPassword();
+  let badgeNumber = generateBadgeNumber(role);
+  while (await User.exists({ badgeNumber })) {
+    badgeNumber = generateBadgeNumber(role);
+  }
   const hashedPassword = await bcrypt.hash(tempPassword, 12);
 
   const createdUser = await User.create({
@@ -68,9 +74,15 @@ const createOfficer = async (officerData, adminId) => {
     email,
     phone,
     role,
+    badgeNumber,
     police_station_id,
+    state_id: policeStation.state || "Maharashtra",
+    district_id: policeStation.district || policeStation.zone,
+    zone_id: policeStation.zone,
+    assigned_zone_id: role === "SP" ? policeStation.district || policeStation.zone : policeStation.zone,
     password: hashedPassword,
-    status: "PENDING",
+    status: "ACTIVE",
+    isFirstLogin: true,
   });
 
   await writeAuditLog({
@@ -83,8 +95,10 @@ const createOfficer = async (officerData, adminId) => {
       email,
       phone,
       role,
+      badgeNumber,
       police_station_id,
-      status: "PENDING",
+      status: "ACTIVE",
+      isFirstLogin: true,
     },
   });
 
@@ -266,11 +280,17 @@ const createCrimeType = async (crimeTypeData, adminId) => {
 
 const getCrimeTypes = async () => CrimeType.find().sort({ name: 1 });
 
-const getReferenceData = async () => {
+const getReferenceData = async (actor) => {
+  const stationScope = actor ? await buildPoliceStationScope(actor) : {};
+  const stationFilter = stationScope.police_station_id?.$in ? { _id: { $in: stationScope.police_station_id.$in } } : {};
   const [policeStations, crimeTypes, officers] = await Promise.all([
-    PoliceStation.find().select("name address state zone").sort({ name: 1 }),
+    PoliceStation.find(stationFilter).select("name address state district zone").sort({ name: 1 }),
     CrimeType.find().select("name severity").sort({ name: 1 }),
-    User.find({ role: { $in: officerRoles }, status: { $in: ["ACTIVE", "active"] } })
+    User.find({
+      role: { $in: ["CONSTABLE", "INSPECTOR", "SP"] },
+      status: { $in: ["ACTIVE", "active"] },
+      ...(stationScope.police_station_id?.$in ? { police_station_id: { $in: stationScope.police_station_id.$in } } : {}),
+    })
       .select("name email role police_station_id")
       .sort({ name: 1 }),
   ]);
@@ -301,19 +321,35 @@ const deleteCrimeType = async (crimeTypeId, adminId) => {
   return crimeType;
 };
 
-const getDashboard = async () => {
+const getDashboard = async (actor) => {
+  const firScope = actor ? await buildFirScope(actor) : {};
+  const stationScope = actor ? await buildPoliceStationScope(actor) : {};
+  const scopedStationIds = stationScope.police_station_id?.$in;
+  const sosScope = scopedStationIds ? { police_station_id: { $in: scopedStationIds } } : {};
+  const patrolScope = scopedStationIds ? { police_station_id: { $in: scopedStationIds } } : {};
   const [
     totalFirs,
     openFirCount,
     closedFirCount,
+    activeSosCount,
+    patrolCoverage,
+    jurisdiction,
     crimeTypeDistribution,
     stationWiseFirCount,
     latestAuditLogs,
   ] = await Promise.all([
-    FIR.countDocuments(),
-    FIR.countDocuments({ status: "open" }),
-    FIR.countDocuments({ status: "closed" }),
+    FIR.countDocuments(firScope),
+    FIR.countDocuments({ ...firScope, status: "open" }),
+    FIR.countDocuments({ ...firScope, status: "closed" }),
+    EmergencySOS.countDocuments({ ...sosScope, status: { $in: ["PENDING", "RESPONDING", "ON_SCENE", "ESCALATED"] } }),
+    PatrolUnit.aggregate([
+      { $match: patrolScope },
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+      { $project: { _id: 0, status: "$_id", count: 1 } },
+    ]),
+    actor ? getJurisdictionLabel(actor) : { level: "STATE", label: "All jurisdictions" },
     FIR.aggregate([
+      { $match: firScope },
       { $group: { _id: "$crime_type_id", count: { $sum: 1 } } },
       {
         $lookup: {
@@ -335,6 +371,7 @@ const getDashboard = async () => {
       { $sort: { count: -1 } },
     ]),
     FIR.aggregate([
+      { $match: firScope },
       { $group: { _id: "$police_station_id", count: { $sum: 1 } } },
       {
         $lookup: {
@@ -362,6 +399,9 @@ const getDashboard = async () => {
     totalFirs,
     openFirCount,
     closedFirCount,
+    activeSosCount,
+    patrolCoverage,
+    jurisdiction,
     crimeTypeDistribution,
     stationWiseFirCount,
     latestAuditLogs,

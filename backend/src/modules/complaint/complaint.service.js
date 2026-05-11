@@ -9,6 +9,7 @@ const {
   User,
 } = require("../../models");
 const { createNotification } = require("../notification/notification.service");
+const { buildComplaintScope } = require("../../utils/jurisdiction");
 
 class ConflictError extends Error {
   constructor(message) {
@@ -34,7 +35,7 @@ class BadRequestError extends Error {
   }
 }
 
-const officerRoles = ["CONSTABLE", "INSPECTOR", "SP", "DGP"];
+const officerRoles = ["CONSTABLE", "INSPECTOR", "SP", "DGP", "ADMIN"];
 const priorityToFirPriority = {
   LOW: "low",
   MEDIUM: "medium",
@@ -79,7 +80,7 @@ const assertOfficer = async (officerId, policeStationId) => {
   if (!officerRoles.includes(officer.role)) {
     throw new BadRequestError("Assigned user must be an officer");
   }
-  if (officer.status !== "active") {
+  if (!["active", "ACTIVE"].includes(officer.status)) {
     throw new BadRequestError("Assigned officer must be active");
   }
   if (policeStationId && String(officer.police_station_id) !== String(policeStationId)) {
@@ -153,11 +154,21 @@ const createCivilianComplaint = async (complaintData, civilianId) => {
   return populateComplaint(Complaint.findById(complaint._id));
 };
 
-const getComplaints = async ({ status, police_station_id, assigned_officer_id, priority, page, limit }) => {
-  const filter = {};
+const getComplaints = async ({ status, police_station_id, assigned_officer_id, priority, page, limit }, actor) => {
+  const filter = actor ? await buildComplaintScope(actor) : {};
   if (status) filter.status = status;
-  if (police_station_id) filter.police_station_id = police_station_id;
-  if (assigned_officer_id) filter.assigned_officer_id = assigned_officer_id;
+  if (police_station_id) {
+    if (filter.police_station_id?.$in && !filter.police_station_id.$in.some((id) => String(id) === String(police_station_id))) {
+      throw new BadRequestError("Requested station is outside your jurisdiction");
+    }
+    filter.police_station_id = police_station_id;
+  }
+  if (assigned_officer_id) {
+    if (actor?.role === "CONSTABLE" && String(assigned_officer_id) !== String(actor.id || actor._id)) {
+      throw new BadRequestError("Constables can only view assigned complaints");
+    }
+    filter.assigned_officer_id = assigned_officer_id;
+  }
   if (priority) filter.priority = priority;
 
   const skip = (page - 1) * limit;

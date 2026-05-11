@@ -2,16 +2,18 @@ import { NavLink } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 
 const links = [
-  { label: "Dashboard", path: "/dashboard", roles: ["ADMIN", "SP", "INSPECTOR", "CONSTABLE"] },
-  { label: "Officers", path: "/officers", roles: ["ADMIN"] },
-  { label: "FIRs", path: "/firs", roles: ["ADMIN", "SP", "INSPECTOR", "CONSTABLE"] },
-  { label: "Complaints", path: "/complaints", roles: ["ADMIN", "SP", "INSPECTOR"] },
-  { label: "Heatmap", path: "/heatmap", roles: ["ADMIN", "SP"] },
-  { label: "Analytics", path: "/analytics", roles: ["ADMIN", "SP"] },
+  { label: "Dashboard", path: "/dashboard", roles: ["ADMIN", "DGP", "SP", "INSPECTOR", "CONSTABLE"] },
+  { label: "Officers", path: "/officers", roles: ["ADMIN", "DGP", "SP"] },
+  { label: "FIRs", path: "/firs", roles: ["ADMIN", "DGP", "SP", "INSPECTOR", "CONSTABLE"] },
+  { label: "Complaints", path: "/complaints", roles: ["ADMIN", "DGP", "SP", "INSPECTOR"] },
+  { label: "Emergencies", path: "/emergencies", roles: ["ADMIN", "DGP", "SP", "INSPECTOR", "CONSTABLE"] },
+  { label: "Transfers", path: "/transfers", roles: ["ADMIN", "DGP", "SP", "INSPECTOR"] },
+  { label: "Analytics", path: "/analytics", roles: ["ADMIN", "DGP", "SP", "INSPECTOR"] },
 ];
 
 const civilianLinks = [
   { label: "My Complaints", path: "/civilian/dashboard" },
+  { label: "SOS Emergency", path: "/civilian/emergency" },
   { label: "Safety Analytics", path: "/civilian/analytics" },
 ];
 

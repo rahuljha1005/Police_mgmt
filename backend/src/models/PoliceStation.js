@@ -27,6 +27,11 @@ const policeStationSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    district: {
+      type: String,
+      trim: true,
+      index: true,
+    },
     zone: {
       type: String,
       required: true,

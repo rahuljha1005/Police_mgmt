@@ -1,7 +1,7 @@
 const Joi = require("joi");
 
 const objectIdPattern = /^[0-9a-fA-F]{24}$/;
-const policeRoles = ["ADMIN", "SP", "INSPECTOR", "CONSTABLE"];
+const policeRoles = ["ADMIN", "DGP", "SP", "INSPECTOR", "CONSTABLE"];
 
 const objectId = (label) =>
   Joi.string().pattern(objectIdPattern).messages({
@@ -29,10 +29,19 @@ const policeRegisterSchema = Joi.object({
 
 const policeLoginSchema = Joi.object({
   email: Joi.string().trim().lowercase().email().required(),
+  badgeNumber: Joi.string().trim().min(3).max(50).allow("", null).optional(),
   password: Joi.string().required(),
+});
+
+const policePasswordResetSchema = Joi.object({
+  currentPassword: Joi.string().required(),
+  newPassword: Joi.string().min(8).max(128).invalid(Joi.ref("currentPassword")).required().messages({
+    "any.invalid": "New password must be different from current password",
+  }),
 });
 
 module.exports = {
   policeLoginSchema,
+  policePasswordResetSchema,
   policeRegisterSchema,
 };

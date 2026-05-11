@@ -23,7 +23,7 @@ const createFir = async (req, res, next) => {
     const { error, value } = validate(createFirSchema, req.body);
     if (error) return validationErrorResponse(res, error);
 
-    const fir = await firService.createFir(value, req.user._id);
+    const fir = await firService.createFir(value, req.user);
 
     return res.status(201).json({
       success: true,
@@ -43,7 +43,7 @@ const assignOfficer = async (req, res, next) => {
     const body = validate(assignOfficerSchema, req.body);
     if (body.error) return validationErrorResponse(res, body.error);
 
-    const fir = await firService.assignOfficer(params.value.id, body.value.assigned_officer_id, req.user._id);
+    const fir = await firService.assignOfficer(params.value.id, body.value.assigned_officer_id, req.user);
 
     return res.status(200).json({
       success: true,
@@ -60,7 +60,7 @@ const getFirs = async (req, res, next) => {
     const { error, value } = validate(getFirsQuerySchema, req.query);
     if (error) return validationErrorResponse(res, error);
 
-    const result = await firService.getFirs(value);
+    const result = await firService.getFirs(value, req.user);
 
     return res.status(200).json({
       success: true,
@@ -78,7 +78,7 @@ const getFirById = async (req, res, next) => {
     const params = validate(objectIdParamSchema, req.params);
     if (params.error) return validationErrorResponse(res, params.error);
 
-    const fir = await firService.getFirById(params.value.id);
+    const fir = await firService.getFirById(params.value.id, req.user);
 
     return res.status(200).json({
       success: true,

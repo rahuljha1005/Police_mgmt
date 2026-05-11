@@ -1,3 +1,5 @@
-import AnalyticsDashboard from "./AnalyticsDashboard";
+import PublicSafetyDashboard from "../publicSafety/PublicSafetyDashboard";
 
-export default AnalyticsDashboard;
+const Analytics = () => <PublicSafetyDashboard context="police" mode="analytics" />;
+
+export default Analytics;

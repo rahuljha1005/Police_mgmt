@@ -11,8 +11,12 @@ const caseUpdateRoutes = require("./modules/caseUpdate/caseUpdate.routes");
 const complaintRoutes = require("./modules/complaint/complaint.routes");
 const firRoutes = require("./modules/fir/fir.routes");
 const heatmapRoutes = require("./modules/heatmap/heatmap.routes");
+const hierarchyRoutes = require("./modules/hierarchy/hierarchy.routes");
 const notificationRoutes = require("./modules/notification/notification.routes");
 const publicAnalyticsRoutes = require("./modules/publicAnalytics/publicAnalytics.routes");
+const publicSafetyRoutes = require("./modules/publicSafety/publicSafety.routes");
+const sosRoutes = require("./modules/sos/sos.routes");
+const transferRoutes = require("./modules/transfer/transfer.routes");
 const { isCloudinaryConfigured } = require("./config/cloudinary");
 
 const app = express();
@@ -89,8 +93,12 @@ app.use("/api/firs", firRoutes);
 app.use("/api/case-updates", caseUpdateRoutes);
 app.use("/api/complaints", complaintRoutes);
 app.use("/api/heatmap", heatmapRoutes);
+app.use("/api/hierarchy", hierarchyRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/public-analytics", publicAnalyticsRoutes);
+app.use("/api/public-safety", publicSafetyRoutes);
+app.use("/api/sos", sosRoutes);
+app.use("/api/transfers", transferRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

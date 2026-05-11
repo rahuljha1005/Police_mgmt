@@ -1,5 +1,6 @@
 const { AuditLog, CrimeType, FIR, PoliceStation, User } = require("../../models");
 const { createNotification } = require("../notification/notification.service");
+const { buildFirScope } = require("../../utils/jurisdiction");
 
 class NotFoundError extends Error {
   constructor(message) {
@@ -17,7 +18,7 @@ class BadRequestError extends Error {
   }
 }
 
-const officerRoles = ["CONSTABLE", "INSPECTOR", "SP", "DGP"];
+const officerRoles = ["CONSTABLE", "INSPECTOR", "SP", "DGP", "ADMIN"];
 
 const writeAuditLog = async ({ adminId, action, entityType, entityId, oldValues, newValues }) =>
   AuditLog.create({
@@ -44,7 +45,7 @@ const assertReferenceData = async ({ crimeTypeId, policeStationId, assignedOffic
     throw new BadRequestError("Assigned user must be an officer");
   }
 
-  if (officer.status !== "active") {
+  if (!["active", "ACTIVE"].includes(officer.status)) {
     throw new BadRequestError("Assigned officer must be active");
   }
 
@@ -61,7 +62,17 @@ const generateFirNumber = () => {
   return `FIR-${datePart}-${randomPart}`;
 };
 
-const createFir = async (firData, adminId) => {
+const ensureActorCanUseStation = async (actor, policeStationId) => {
+  const scope = await buildFirScope(actor);
+  if (!scope.police_station_id) return;
+  const stationIds = scope.police_station_id.$in || [];
+  if (!stationIds.some((id) => String(id) === String(policeStationId))) {
+    throw new BadRequestError("Selected police station is outside your jurisdiction");
+  }
+};
+
+const createFir = async (firData, actor) => {
+  await ensureActorCanUseStation(actor, firData.police_station_id);
   await assertReferenceData({
     crimeTypeId: firData.crime_type_id,
     policeStationId: firData.police_station_id,
@@ -72,13 +83,13 @@ const createFir = async (firData, adminId) => {
     ...firData,
     fir_number: generateFirNumber(),
     filed_by_type: "officer",
-    filed_by_id: adminId,
-    created_by: adminId,
+    filed_by_id: actor._id || actor.id,
+    created_by: actor._id || actor.id,
     status: "open",
   });
 
   await writeAuditLog({
-    adminId,
+    adminId: actor._id || actor.id,
     action: "CREATE_FIR",
     entityType: "FIR",
     entityId: fir._id,
@@ -86,7 +97,7 @@ const createFir = async (firData, adminId) => {
   });
 
   await createNotification({
-    userId: assignedOfficerId,
+    userId: fir.assigned_officer_id,
     title: "FIR assigned",
     message: `${fir.fir_number} has been assigned to you`,
     type: "FIR_ASSIGNED",
@@ -97,9 +108,10 @@ const createFir = async (firData, adminId) => {
   return getFirById(fir._id);
 };
 
-const assignOfficer = async (firId, assignedOfficerId, adminId) => {
+const assignOfficer = async (firId, assignedOfficerId, actor) => {
   const fir = await FIR.findById(firId);
   if (!fir) throw new NotFoundError("FIR not found");
+  await ensureActorCanUseStation(actor, fir.police_station_id);
 
   await assertReferenceData({
     crimeTypeId: fir.crime_type_id,
@@ -112,7 +124,7 @@ const assignOfficer = async (firId, assignedOfficerId, adminId) => {
   await fir.save();
 
   await writeAuditLog({
-    adminId,
+    adminId: actor._id || actor.id,
     action: "ASSIGN_OFFICER",
     entityType: "FIR",
     entityId: fir._id,
@@ -123,11 +135,21 @@ const assignOfficer = async (firId, assignedOfficerId, adminId) => {
   return getFirById(fir._id);
 };
 
-const getFirs = async ({ status, police_station_id, assigned_officer_id, crime_type_id, page, limit }) => {
-  const filter = {};
+const getFirs = async ({ status, police_station_id, assigned_officer_id, crime_type_id, page, limit }, actor) => {
+  const filter = actor ? await buildFirScope(actor) : {};
   if (status) filter.status = status;
-  if (police_station_id) filter.police_station_id = police_station_id;
-  if (assigned_officer_id) filter.assigned_officer_id = assigned_officer_id;
+  if (police_station_id) {
+    if (filter.police_station_id?.$in && !filter.police_station_id.$in.some((id) => String(id) === String(police_station_id))) {
+      throw new BadRequestError("Requested station is outside your jurisdiction");
+    }
+    filter.police_station_id = police_station_id;
+  }
+  if (assigned_officer_id) {
+    if (actor?.role === "CONSTABLE" && String(assigned_officer_id) !== String(actor.id || actor._id)) {
+      throw new BadRequestError("Constables can only view assigned FIRs");
+    }
+    filter.assigned_officer_id = assigned_officer_id;
+  }
   if (crime_type_id) filter.crime_type_id = crime_type_id;
 
   const skip = (page - 1) * limit;
@@ -153,14 +175,26 @@ const getFirs = async ({ status, police_station_id, assigned_officer_id, crime_t
   };
 };
 
-const getFirById = async (firId) => {
+const getFirById = async (firId, actor) => {
   const fir = await FIR.findById(firId)
     .populate("assigned_officer_id", "name email role phone")
     .populate("crime_type_id", "name severity description")
     .populate("police_station_id", "name address state zone phone")
-    .populate("created_by", "name email role");
+    .populate("created_by", "name email role")
+    .populate("transferHistory.fromOfficer", "name role badgeNumber")
+    .populate("transferHistory.toOfficer", "name role badgeNumber")
+    .populate("transferHistory.transferredBy", "name role badgeNumber");
 
   if (!fir) throw new NotFoundError("FIR not found");
+  if (actor) {
+    const scope = await buildFirScope(actor);
+    if (scope.assigned_officer_id && String(fir.assigned_officer_id?._id || fir.assigned_officer_id) !== String(scope.assigned_officer_id)) {
+      throw new NotFoundError("FIR not found in your jurisdiction");
+    }
+    if (scope.police_station_id?.$in && !scope.police_station_id.$in.some((id) => String(id) === String(fir.police_station_id?._id || fir.police_station_id))) {
+      throw new NotFoundError("FIR not found in your jurisdiction");
+    }
+  }
   return fir;
 };
 

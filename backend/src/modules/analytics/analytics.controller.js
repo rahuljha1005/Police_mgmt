@@ -14,7 +14,7 @@ const handleAnalytics = (serviceMethod, message) => async (req, res, next) => {
     const { error, value } = validate(analyticsQuerySchema, req.query);
     if (error) return validationErrorResponse(res, error);
 
-    const data = await serviceMethod(value, req.user._id);
+    const data = await serviceMethod(value, req.user);
     return res.status(200).json({ success: true, message, data });
   } catch (error) {
     return next(error);

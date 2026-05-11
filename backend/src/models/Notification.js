@@ -4,9 +4,13 @@ const notificationSchema = new mongoose.Schema(
   {
     user_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
       required: true,
       index: true,
+    },
+    user_model: {
+      type: String,
+      enum: ["User", "Civilian"],
+      default: "User",
     },
     title: {
       type: String,
@@ -20,7 +24,24 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["FIR_ASSIGNED", "CASE_UPDATED", "COMPLAINT_ASSIGNED", "STATUS_CHANGED", "EVIDENCE_ADDED"],
+      enum: [
+        "FIR_ASSIGNED",
+        "CASE_TRANSFERRED",
+        "CASE_HANDOVER",
+        "CASE_UPDATED",
+        "COMPLAINT_ASSIGNED",
+        "STATUS_CHANGED",
+        "EVIDENCE_ADDED",
+        "SOS_CREATED",
+        "SOS_ASSIGNED",
+        "SOS_RESPONDING",
+        "SOS_ON_SCENE",
+        "SOS_ESCALATED",
+        "SOS_RESOLVED",
+        "SOS_FALSE_ALERT",
+        "SOS_CONVERTED_TO_FIR",
+        "ZONE_SAFETY_ALERT",
+      ],
       required: true,
       index: true,
     },

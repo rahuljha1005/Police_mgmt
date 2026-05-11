@@ -31,8 +31,9 @@ const CivilianSignup = () => {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#17120f] px-4 py-8 text-white">
       <section className="w-full max-w-2xl rounded-lg border border-white/10 bg-[#241b17] p-6 shadow-2xl shadow-black/40">
-        <p className="text-sm font-semibold uppercase text-amber-300">Citizen Services</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-300">Public Safety Portal</p>
         <h1 className="mt-2 text-3xl font-semibold">Create Civilian Account</h1>
+        <p className="mt-3 text-sm leading-6 text-zinc-400">Create a citizen account for complaint services, SOS assistance, and public safety awareness tools.</p>
         <form className="mt-7 grid gap-4 md:grid-cols-2" onSubmit={submit}>
           <Input label="Full Name" name="name" onChange={updateForm} value={form.name} />
           <Input label="Phone" name="phone" onChange={updateForm} value={form.phone} />

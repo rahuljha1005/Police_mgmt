@@ -27,18 +27,8 @@ const zoneSafety = async (req, res, next) => {
   }
 };
 
-const heatmap = async (req, res, next) => {
-  try {
-    const data = await publicAnalyticsService.getPublicHeatmap();
-    return res.status(200).json({ success: true, data });
-  } catch (error) {
-    return next(error);
-  }
-};
-
 module.exports = {
   crimeTrends,
   crimeTypes,
-  heatmap,
   zoneSafety,
 };

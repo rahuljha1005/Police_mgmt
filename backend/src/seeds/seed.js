@@ -9,8 +9,10 @@ const {
   Complaint,
   CrimeLocation,
   CrimeType,
+  EmergencySOS,
   FIR,
   OfficerVerification,
+  PatrolUnit,
   PoliceStation,
   User,
 } = require("../models");
@@ -44,6 +46,7 @@ const seedBaseData = async () => {
   const stations = await PoliceStation.insertMany(
     policeStations.map((station) => ({
       ...station,
+      district: station.zone,
       state,
       phone: `022${randomInt(20000000, 29999999)}`,
     }))
@@ -64,7 +67,23 @@ const seedUsers = async ({ stations }) => {
     phone: "9999990000",
     password,
     role: "ADMIN",
+    state_id: state,
     status: "active",
+    createdAt: randomPastDate(500),
+    updatedAt: new Date(),
+  });
+
+  const dgp = await User.create({
+    name: "DGP Maharashtra Command",
+    email: "dgp@police.com",
+    phone: "9999990001",
+    badgeNumber: "MH-DGP-00001",
+    password,
+    role: "DGP",
+    state_id: state,
+    status: "active",
+    verified_by: admin._id,
+    verified_at: randomPastDate(300),
     createdAt: randomPastDate(500),
     updatedAt: new Date(),
   });
@@ -81,6 +100,10 @@ const seedUsers = async ({ stations }) => {
       password,
       role: pickOne(roles),
       police_station_id: station._id,
+      state_id: state,
+      district_id: station.district || station.zone,
+      zone_id: station.zone,
+      assigned_zone_id: station.district || station.zone,
       status: "active",
       verified_by: admin._id,
       verified_at: randomPastDate(300),
@@ -105,7 +128,31 @@ const seedUsers = async ({ stations }) => {
     }))
   );
 
-  return { admin, officers };
+  return { admin, dgp, officers };
+};
+
+const seedPatrols = async ({ stations, officers }) => {
+  const patrols = stations.flatMap((station, stationIndex) => {
+    const stationOfficers = officersForStation(officers, station._id);
+    return Array.from({ length: 2 }, (_, index) => ({
+      name: `Patrol Unit ${stationIndex + 1}-${index + 1}`,
+      status: Math.random() < 0.72 ? "AVAILABLE" : "ASSIGNED",
+      zone_id: station.zone,
+      state_id: state,
+      district_id: station.district || station.zone,
+      police_station_id: station._id,
+      currentLocation: {
+        address: station.address,
+        latitude: station.latitude + (Math.random() - 0.5) * 0.018,
+        longitude: station.longitude + (Math.random() - 0.5) * 0.018,
+      },
+      assigned_officer_id: pickOne(stationOfficers)?._id,
+      createdAt: randomPastDate(160),
+      updatedAt: new Date(),
+    }));
+  });
+
+  return PatrolUnit.insertMany(patrols);
 };
 
 const seedCivilians = async (faker) => {
@@ -199,6 +246,55 @@ const seedComplaints = async ({ faker, stations, officers, civilians, firs }) =>
   });
 
   return Complaint.insertMany(complaints);
+};
+
+const seedSosIncidents = async ({ stations, officers, civilians, patrols }) => {
+  const types = ["MEDICAL", "ROBBERY", "ASSAULT", "ACCIDENT", "WOMEN_SAFETY", "FIRE", "OTHER"];
+  const statuses = ["PENDING", "RESPONDING", "ON_SCENE", "RESOLVED", "ESCALATED", "FALSE_ALERT"];
+  const incidents = Array.from({ length: 120 }, (_, index) => {
+    const station = pickOne(stations);
+    const stationOfficers = officersForStation(officers, station._id);
+    const officer = pickOne(stationOfficers);
+    const patrol = pickOne(patrols.filter((unit) => String(unit.police_station_id) === String(station._id))) || pickOne(patrols);
+    const createdAt = randomPastDate(90);
+    const status = pickOne(statuses);
+    const respondedAt = ["RESPONDING", "ON_SCENE", "RESOLVED", "ESCALATED", "FALSE_ALERT"].includes(status) ? addRandomMinutes(createdAt, 4, 28) : undefined;
+    const arrivedAt = ["ON_SCENE", "RESOLVED", "FALSE_ALERT"].includes(status) ? addRandomMinutes(respondedAt || createdAt, 6, 38) : undefined;
+    const resolvedAt = ["RESOLVED", "FALSE_ALERT"].includes(status) ? addRandomMinutes(arrivedAt || respondedAt || createdAt, 12, 140) : undefined;
+    const emergencyType = pickOne(types);
+
+    return {
+      civilian_id: pickOne(civilians)._id,
+      emergencyType,
+      description: `${emergencyType} emergency reported near ${station.name}.`,
+      location: {
+        address: station.address,
+        latitude: station.latitude + (Math.random() - 0.5) * 0.026,
+        longitude: station.longitude + (Math.random() - 0.5) * 0.026,
+      },
+      state_id: state,
+      district_id: station.district || station.zone,
+      police_station_id: station._id,
+      status,
+      assigned_patrol_id: patrol?._id,
+      assigned_officer_id: officer?._id,
+      priority: status === "ESCALATED" || ["ROBBERY", "ASSAULT", "FIRE"].includes(emergencyType) ? "CRITICAL" : pickOne(["MEDIUM", "HIGH"]),
+      respondedAt,
+      arrivedAt,
+      resolvedAt,
+      escalationLevel: status === "ESCALATED" ? randomInt(1, 2) : 0,
+      incidentTimeline: [
+        { action: "SOS_CREATED", notes: "Emergency reported through civilian portal.", createdAt },
+        ...(respondedAt ? [{ action: "SOS_RESPONDING", officer_id: officer?._id, officerName: officer?.name, notes: "Officer accepted emergency request.", createdAt: respondedAt }] : []),
+        ...(arrivedAt ? [{ action: "SOS_ON_SCENE", officer_id: officer?._id, officerName: officer?.name, notes: "Officer arrived at emergency location.", createdAt: arrivedAt }] : []),
+        ...(resolvedAt ? [{ action: status === "FALSE_ALERT" ? "SOS_FALSE_ALERT" : "SOS_RESOLVED", officer_id: officer?._id, officerName: officer?.name, notes: "Incident lifecycle closed.", createdAt: resolvedAt }] : []),
+      ],
+      createdAt,
+      updatedAt: resolvedAt || new Date(),
+    };
+  });
+
+  return EmergencySOS.insertMany(incidents);
 };
 
 const statusFromDb = {
@@ -325,7 +421,10 @@ const runSeed = async () => {
   const { stations, types } = await seedBaseData();
 
   console.log("Seeding officers and admin...");
-  const { admin, officers } = await seedUsers({ stations });
+  const { admin, dgp, officers } = await seedUsers({ stations });
+
+  console.log("Seeding patrol units...");
+  const patrols = await seedPatrols({ stations, officers });
 
   console.log("Seeding civilians...");
   const civilians = await seedCivilians(faker);
@@ -337,12 +436,15 @@ const runSeed = async () => {
   console.log("Seeding complaints...");
   const complaints = await seedComplaints({ faker, stations, officers, civilians, firs });
 
+  console.log("Seeding SOS emergency lifecycle data...");
+  const sosIncidents = await seedSosIncidents({ stations, officers, civilians, patrols });
+
   console.log("Seeding investigation timelines...");
   const caseUpdates = await seedCaseUpdates({ faker, firs });
 
   console.log("Seeding audit logs...");
   const auditLogs = await seedAuditLogs({
-    users: [admin, ...officers],
+    users: [admin, dgp, ...officers],
     firs,
     complaints,
     caseUpdates,
@@ -354,9 +456,11 @@ const runSeed = async () => {
     policeStations: stations.length,
     crimeTypes: types.length,
     officers: officers.length,
+    patrols: patrols.length,
     civilians: civilians.length,
     firs: firs.length,
     complaints: complaints.length,
+    sosIncidents: sosIncidents.length,
     caseUpdates: caseUpdates.length,
     auditLogs: auditLogs.length,
   });

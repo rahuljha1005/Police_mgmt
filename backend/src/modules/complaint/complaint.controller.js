@@ -59,7 +59,7 @@ const getComplaints = async (req, res, next) => {
     const { error, value } = validate(getComplaintsQuerySchema, req.query);
     if (error) return validationErrorResponse(res, error);
 
-    const result = await complaintService.getComplaints(value);
+    const result = await complaintService.getComplaints(value, req.user);
 
     return res.status(200).json({
       success: true,

@@ -7,8 +7,8 @@ const router = express.Router();
 
 router.use(requireAuth);
 
-router.get("/crime-trends", requireRoles("ADMIN", "SP"), analyticsController.getCrimeTrends);
-router.get("/station-analysis", requireRoles("ADMIN", "SP", "INSPECTOR"), analyticsController.getStationAnalysis);
-router.get("/heatmap-summary", requireRoles("ADMIN", "SP"), analyticsController.getHeatmapSummary);
+router.get("/crime-trends", requireRoles("ADMIN", "DGP", "SP", "INSPECTOR", "CONSTABLE"), analyticsController.getCrimeTrends);
+router.get("/station-analysis", requireRoles("ADMIN", "DGP", "SP", "INSPECTOR"), analyticsController.getStationAnalysis);
+router.get("/heatmap-summary", requireRoles("ADMIN", "DGP", "SP", "INSPECTOR"), analyticsController.getHeatmapSummary);
 
 module.exports = router;

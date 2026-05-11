@@ -163,7 +163,7 @@ const deleteCrimeType = async (req, res, next) => {
 
 const getDashboard = async (req, res, next) => {
   try {
-    const dashboard = await adminService.getDashboard();
+    const dashboard = await adminService.getDashboard(req.user);
 
     return res.status(200).json({
       success: true,
@@ -177,7 +177,7 @@ const getDashboard = async (req, res, next) => {
 
 const getReferenceData = async (req, res, next) => {
   try {
-    const referenceData = await adminService.getReferenceData();
+    const referenceData = await adminService.getReferenceData(req.user);
 
     return res.status(200).json({
       success: true,

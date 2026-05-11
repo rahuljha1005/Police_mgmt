@@ -23,8 +23,8 @@ api.interceptors.response.use(
 
       if (window.location.pathname.startsWith("/civilian")) {
         window.location.href = "/civilian/login";
-      } else if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
+      } else if (window.location.pathname !== "/police/login") {
+        window.location.href = "/police/login";
       }
     }
 

@@ -42,10 +42,12 @@ const Officers = () => {
 
   const updateFilter = (event) => setFilters((current) => ({ ...current, page: 1, [event.target.name]: event.target.value }));
   const createNewOfficer = async (payload) => {
+    setError("");
     const response = await createOfficer(payload);
-    setFeedback(`Officer created. Temporary password: ${response.data.data.tempPassword}`);
+    const { officer, tempPassword } = response.data.data;
+    setFeedback(`Officer created. Badge ID: ${officer.badgeNumber}. Temporary password: ${tempPassword}`);
     setModalOpen(false);
-    load();
+    await load();
   };
 
   const verify = async (id, status) => {

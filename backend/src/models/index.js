@@ -17,6 +17,9 @@ const CaseUpdate = require("./CaseUpdate");
 const CrimeLocation = require("./CrimeLocation");
 const AuditLog = require("./AuditLog");
 const Notification = require("./Notification");
+const EmergencySOS = require("./EmergencySOS");
+const PatrolUnit = require("./PatrolUnit");
+const PublicSafetyAnalytics = require("./PublicSafetyAnalytics");
 
 module.exports = {
   Organization,
@@ -33,4 +36,7 @@ module.exports = {
   CrimeLocation,
   AuditLog,
   Notification,
+  EmergencySOS,
+  PatrolUnit,
+  PublicSafetyAnalytics,
 };

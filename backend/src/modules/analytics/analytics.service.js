@@ -1,9 +1,16 @@
 const { AuditLog, Complaint, FIR, PoliceStation } = require("../../models");
+const { buildFirScope, getJurisdictionLabel } = require("../../utils/jurisdiction");
 
-const buildFirFilter = async ({ from, to, crime_type_id, police_station_id, zone, status }) => {
-  const filter = {};
+const buildFirFilter = async ({ from, to, crime_type_id, police_station_id, zone, status }, actor) => {
+  const filter = actor ? await buildFirScope(actor) : {};
   if (crime_type_id) filter.crime_type_id = crime_type_id;
-  if (police_station_id) filter.police_station_id = police_station_id;
+  if (police_station_id) {
+    if (filter.police_station_id?.$in && !filter.police_station_id.$in.some((id) => String(id) === String(police_station_id))) {
+      filter.police_station_id = { $in: [] };
+    } else {
+      filter.police_station_id = police_station_id;
+    }
+  }
   if (status) filter.status = status;
   if (from || to) {
     filter.createdAt = {};
@@ -12,7 +19,12 @@ const buildFirFilter = async ({ from, to, crime_type_id, police_station_id, zone
   }
   if (zone) {
     const stations = await PoliceStation.find({ zone }).select("_id");
-    filter.police_station_id = { $in: stations.map((station) => station._id) };
+    const zoneIds = stations.map((station) => station._id);
+    if (filter.police_station_id?.$in) {
+      filter.police_station_id = { $in: zoneIds.filter((id) => filter.police_station_id.$in.some((scopedId) => String(scopedId) === String(id))) };
+    } else {
+      filter.police_station_id = { $in: zoneIds };
+    }
   }
   return filter;
 };
@@ -25,8 +37,8 @@ const logAnalyticsView = (userId, action = "VIEW_ANALYTICS") =>
     entity_id: userId,
   });
 
-const getCrimeTrends = async (filters, userId) => {
-  const match = await buildFirFilter(filters);
+const getCrimeTrends = async (filters, user) => {
+  const match = await buildFirFilter(filters, user);
   const [monthlyTrends, crimeTypeGrowth, openClosedRatio, highCrimeZones, stationWiseCounts, officerWorkload] =
     await Promise.all([
       FIR.aggregate([
@@ -76,12 +88,12 @@ const getCrimeTrends = async (filters, userId) => {
       ]),
     ]);
 
-  await logAnalyticsView(userId);
-  return { monthlyTrends, crimeTypeGrowth, openClosedRatio, highCrimeZones, stationWiseCounts, officerWorkload };
+  await logAnalyticsView(user.id || user._id);
+  return { jurisdiction: await getJurisdictionLabel(user), monthlyTrends, crimeTypeGrowth, openClosedRatio, highCrimeZones, stationWiseCounts, officerWorkload };
 };
 
-const getStationAnalysis = async (filters, userId) => {
-  const match = await buildFirFilter(filters);
+const getStationAnalysis = async (filters, user) => {
+  const match = await buildFirFilter(filters, user);
   const [stationComparison, complaintConversionRate] = await Promise.all([
     FIR.aggregate([
       { $match: match },
@@ -97,12 +109,12 @@ const getStationAnalysis = async (filters, userId) => {
     ]),
   ]);
 
-  await logAnalyticsView(userId);
-  return { stationComparison, complaintConversionRate };
+  await logAnalyticsView(user.id || user._id);
+  return { jurisdiction: await getJurisdictionLabel(user), stationComparison, complaintConversionRate };
 };
 
-const getHeatmapSummary = async (filters, userId) => {
-  const match = await buildFirFilter(filters);
+const getHeatmapSummary = async (filters, user) => {
+  const match = await buildFirFilter(filters, user);
   const [hotspots, recentSpikes, activeZones] = await Promise.all([
     FIR.aggregate([
       { $match: match },
@@ -129,8 +141,8 @@ const getHeatmapSummary = async (filters, userId) => {
     ]),
   ]);
 
-  await logAnalyticsView(userId);
-  return { hotspots, recentSpikes, activeZones };
+  await logAnalyticsView(user.id || user._id);
+  return { jurisdiction: await getJurisdictionLabel(user), hotspots, recentSpikes, activeZones };
 };
 
 module.exports = {

@@ -8,11 +8,12 @@ class NotFoundError extends Error {
   }
 }
 
-const createNotification = async ({ userId, title, message, type, relatedEntityType, relatedEntityId }) => {
+const createNotification = async ({ userId, userModel = "User", title, message, type, relatedEntityType, relatedEntityId }) => {
   if (!userId) return null;
 
   const notification = await Notification.create({
     user_id: userId,
+    user_model: userModel,
     title,
     message,
     type,

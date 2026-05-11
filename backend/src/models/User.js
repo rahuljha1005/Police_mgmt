@@ -33,15 +33,26 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["ADMIN", "SP", "INSPECTOR", "CONSTABLE"],
+      enum: ["ADMIN", "DGP", "SP", "INSPECTOR", "CONSTABLE"],
       required: true,
+      index: true,
+    },
+    state_id: {
+      type: String,
+      default: "Maharashtra",
+      trim: true,
+      index: true,
+    },
+    district_id: {
+      type: String,
+      trim: true,
       index: true,
     },
     police_station_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "PoliceStation",
       required() {
-        return this.role !== "ADMIN";
+        return !["ADMIN", "DGP"].includes(this.role);
       },
       index: true,
     },
@@ -50,9 +61,14 @@ const userSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
+    assigned_zone_id: {
+      type: String,
+      trim: true,
+      index: true,
+    },
     status: {
       type: String,
-      enum: ["PENDING", "ACTIVE", "SUSPENDED", "pending", "active", "rejected"],
+      enum: ["PENDING", "ACTIVE", "SUSPENDED", "TRANSFERRED", "INACTIVE", "pending", "active", "rejected"],
       default: "PENDING",
       index: true,
     },
@@ -66,6 +82,11 @@ const userSchema = new mongoose.Schema(
     },
     verified_at: {
       type: Date,
+    },
+    isFirstLogin: {
+      type: Boolean,
+      default: false,
+      index: true,
     },
   },
   { timestamps: true }

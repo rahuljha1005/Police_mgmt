@@ -1,5 +1,5 @@
 const policeAuthService = require("./policeAuth.service");
-const { policeLoginSchema, policeRegisterSchema } = require("./policeAuth.validation");
+const { policeLoginSchema, policePasswordResetSchema, policeRegisterSchema } = require("./policeAuth.validation");
 
 const validate = (schema, data) =>
   schema.validate(data, {
@@ -40,8 +40,29 @@ const login = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: "Login successful",
+      requiresPasswordReset: result.requiresPasswordReset,
       token: result.token,
       user: result.user,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const resetTemporaryPassword = async (req, res, next) => {
+  try {
+    const { error, value } = validate(policePasswordResetSchema, req.body);
+    if (error) return validationErrorResponse(res, error);
+
+    const user = await policeAuthService.resetTemporaryPassword({
+      userId: req.user.id,
+      ...value,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Password updated successfully",
+      user,
     });
   } catch (error) {
     return next(error);
@@ -51,4 +72,5 @@ const login = async (req, res, next) => {
 module.exports = {
   login,
   register,
+  resetTemporaryPassword,
 };

@@ -1,4 +1,4 @@
-const { Complaint, CrimeLocation, CrimeType, FIR, PoliceStation } = require("../../models");
+const { Complaint, CrimeType, FIR, PoliceStation } = require("../../models");
 
 const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -123,34 +123,8 @@ const getZoneSafety = async () => {
   return zoneStats;
 };
 
-const getPublicHeatmap = async () => {
-  const points = await CrimeLocation.aggregate([
-    {
-      $group: {
-        _id: {
-          latitude: { $round: ["$latitude", 2] },
-          longitude: { $round: ["$longitude", 2] },
-        },
-        count: { $sum: 1 },
-      },
-    },
-    {
-      $project: {
-        _id: 0,
-        latitude: "$_id.latitude",
-        longitude: "$_id.longitude",
-        intensity: "$count",
-      },
-    },
-    { $limit: 500 },
-  ]);
-
-  return points;
-};
-
 module.exports = {
   getCrimeTrends,
   getCrimeTypes,
-  getPublicHeatmap,
   getZoneSafety,
 };
