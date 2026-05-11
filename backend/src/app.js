@@ -1,4 +1,5 @@
 const express = require("express");
+const path = require("path");
 const cors = require("cors");
 const morgan = require("morgan");
 const connectDB = require("./config/db");
@@ -20,6 +21,7 @@ const transferRoutes = require("./modules/transfer/transfer.routes");
 const { isCloudinaryConfigured } = require("./config/cloudinary");
 
 const app = express();
+const frontendDistPath = path.resolve(__dirname, "../../frontend/dist");
 const allowedOrigins = (process.env.CORS_ORIGIN || process.env.FRONTEND_URL || "")
   .split(",")
   .map((origin) => origin.trim())
@@ -99,6 +101,16 @@ app.use("/api/public-analytics", publicAnalyticsRoutes);
 app.use("/api/public-safety", publicSafetyRoutes);
 app.use("/api/sos", sosRoutes);
 app.use("/api/transfers", transferRoutes);
+
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(frontendDistPath));
+
+  app.get(/^(?!\/api).*/, (req, res, next) => {
+    res.sendFile(path.join(frontendDistPath, "index.html"), (error) => {
+      if (error) next();
+    });
+  });
+}
 
 app.use((req, res) => {
   res.status(404).json({
